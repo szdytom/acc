@@ -3,7 +3,7 @@
 
 // Token structure
 struct token {
-	int token;	// token type
+	int type;	// token type
 	int intval;	// hold the value of the integer that we scanned in
 };
 

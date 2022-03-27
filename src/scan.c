@@ -67,25 +67,25 @@ static int scanint() {
 int scan(struct token *t) {
 	int c = skip_whitespaces();
 	if (c == EOF) {
-		t->token = T_EOF;
+		t->type = T_EOF;
 		return (0);
 	} else if (c == '+') {
-		t->token = T_PLUS;
+		t->type = T_PLUS;
 		next();
 	} else if (c == '-') {
-		t->token = T_MINUS;
+		t->type = T_MINUS;
 		next();
 	} else if (c == '*') {
-		t->token = T_STAR;
+		t->type = T_STAR;
 		next();
 	} else if (c == '/') {
-		t->token = T_SLASH;
+		t->type = T_SLASH;
 		next();
 	} else {
 		// If it's a digit, scan the
 		// literal integer value in
 		if (isdigit(c)) {
-			t->token = T_INTLIT;
+			t->type = T_INTLIT;
 			t->intval = scanint();
 		} else {
 			fprintf(stderr, "Unrecognised character %c on line %d\n", c, Line);
