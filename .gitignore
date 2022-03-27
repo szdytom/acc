@@ -1,0 +1,9 @@
+
+# Executables
+scanner
+
+# C compile
+*.o
+
+# scripts
+automode.bash
