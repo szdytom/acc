@@ -67,6 +67,7 @@ static int scanint() {
 int scan(struct token *t) {
 	int c = skip_whitespaces();
 	if (c == EOF) {
+		t->token = T_EOF;
 		return (0);
 	} else if (c == '+') {
 		t->token = T_PLUS;

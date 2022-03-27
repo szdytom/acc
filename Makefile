@@ -1,5 +1,5 @@
-scanner: main.c src/scan.c
-	gcc main.c src/scan.c -o scanner -g -I include/
+scanner: main.c src/scan.c src/ast.c src/expr.c
+	gcc main.c src/scan.c src/ast.c src/expr.c -o acc -g -I include/
 
 clean:
-	rm -f scanner
+	rm -f acc

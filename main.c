@@ -1,21 +1,36 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "defs.h"
 #include "scan.h"
+#include "defs.h"
+#include "expr.h"
 
-// List of printable tokens
-char *token_str[] = {  "+", "-", "*", "/", "intlit" };
+// Given an AST('s root node), 
+// interpret the operators in it and return a final value.
+static int interpret_ast(struct ASTnode *rt) {
+	if (rt->op == A_INTLIT) {
+		return rt->intval;
+	}
 
-// Loop scanning in all the tokens in the input file.
-// Print out details of each token found.
-static void scanfile(void) {
-	struct token T;
-	while (scan(&T)) {
-		printf("Token %s", token_str[T.token]);
-		if (T.token == T_INTLIT) {
-			printf(", value %d", T.intval);
-		}
-		printf("\n");
+	int lv, rv;
+	if (rt->left) {
+		lv = interpret_ast(rt->left);
+	}
+
+	if (rt->right) {
+		rv = interpret_ast(rt->right);
+	}
+
+	if (rt->op == A_ADD) {
+		return (lv + rv);
+	} else if (rt->op == A_SUB) {
+		return (lv - rv);
+	} else if (rt->op == A_MUL) {
+		return (lv * rv);
+	} else if (rt->op == A_DIV) {
+		return (lv / rv);
+	} else {
+		fprintf(stderr, "Unknown AST operator %d\n", rt->op);
+		exit(1);
 	}
 }
 
@@ -33,6 +48,6 @@ int main(int argc, char *argv[]) {
 		usage(argv[0]);
 	}
 	openfile(argv[1]);
-	scanfile();
+	printf("%d\n", interpret_ast(parse()));
 	return (0);
 }

@@ -3,6 +3,10 @@
 
 #include "defs.h"
 
+extern int Line;
+extern int Preview;
+extern FILE *Infile;
+
 int scan(struct token *t);
 void openfile(char *filename);
 
