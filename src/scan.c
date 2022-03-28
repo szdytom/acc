@@ -10,11 +10,18 @@ int Line = 1;
 FILE *Infile;
 
 // open input file
-void openfile(char *filename) {
+void open_inputfile(char *filename) {
 	Infile = fopen(filename, "r");
 	if (Infile == NULL) {
 		fprintf(stderr, "Unable to open %s: %s\n", filename, strerror(errno));
 		exit(1);
+	}
+}
+
+// close Infile
+void scan_unload(void) {
+	if (Infile) {
+		fclose(Infile);
 	}
 }
 

@@ -1,6 +1,10 @@
 
 # Executables
 acc
+a
+
+# Output
+*.s
 
 # C compile
 *.o

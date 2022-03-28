@@ -14,7 +14,7 @@ struct ASTnode* make_astnode(int op, struct ASTnode *left, struct ASTnode *right
 	x->op = op;
 	x->left = left;
 	x->right = right;
-	x-> intval = intval;
+	x->intval = intval;
 	return (x);
 }
 
@@ -28,3 +28,13 @@ struct ASTnode* make_unary(int op, struct ASTnode *c, int intval) {
 	return (make_astnode(op, c, NULL, intval));
 }
 
+// free an AST's memory
+void free_ast(struct ASTnode *rt) {
+	if (rt->left) {
+		free_ast(rt->left);
+	}
+	if (rt->right) {
+		free_ast(rt->right);
+	}
+	free(rt);
+}

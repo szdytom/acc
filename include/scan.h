@@ -8,6 +8,7 @@ extern int Preview;
 extern FILE *Infile;
 
 int scan(struct token *t);
-void openfile(char *filename);
+void open_inputfile(char *filename);
+void scan_unload(void);
 
 #endif
