@@ -1,6 +1,8 @@
 #ifndef ACC_DEFS_H
 #define ACC_DEFS_H
 
+#include "util/linklist.h"
+
 // Token structure
 struct token {
 	int type;	// token type
@@ -9,23 +11,52 @@ struct token {
 
 // Tokens
 enum {
+	T_EOF,
+	T_SEMI,
 	T_PLUS, T_MINUS, T_STAR, T_SLASH,
+	T_PRINT,
 	T_INTLIT,
-	T_EOF
 };
-extern const char *token_typename[6];
+extern const char *token_typename[8];
 
-// AST nodes
+// AST operation types
 enum {
-	A_ADD, A_SUB, A_MUL, A_DIV, A_INTLIT
+	A_ADD, A_SUB, A_MUL, A_DIV, A_INTLIT, A_BLOCK, A_PRINT
 };
 
-// AST structure
+// AST nodde types
+enum {
+	N_BIN, N_UN, N_MULTI, N_LEAF
+};
+
+// AST structure (common)
 struct ASTnode {
 	int op;	//operator
-	struct ASTnode *left;	// left child
-	struct ASTnode *right;	// right child
-	int intval;	// for A_INTLIT, an integer value
+};
+
+// AST binary operation node
+struct ASTbinnode {
+	int op;
+	struct ASTnode *left;
+	struct ASTnode *right;
+};
+
+// AST unary operation node
+struct ASTunnode {
+	int op;
+	struct ASTnode *c;
+};
+
+// AST block node
+struct ASTblocknode {
+	int op;
+	struct linklist st; // statements linklist
+};
+
+// AST int literal node
+struct ASTintnode {
+	int op;
+	int val;
 };
 
 #endif

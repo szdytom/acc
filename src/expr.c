@@ -6,7 +6,7 @@
 
 static struct token Token; // current token for parsing
 
-const char *token_typename[6] = { "T_PLUS", "T_MINUS", "T_STAR", "T_SLASH", "T_INTLIT", "T_EOF" };
+const char *token_typename[] = { "EOF", ";", "+", "-", "*", "/", "print", "integer literal" };
 
 // Check that we have a binary operator and return its precedence.
 static int op_precedence(int t) {
@@ -53,7 +53,7 @@ static struct ASTnode* primary(void) {
 	// and scan in the next token. Otherwise, a syntax error
 	// for any other token type.
 	if (Token.type == T_INTLIT) {
-		res = make_leaf(A_INTLIT, Token.intval);
+		res = ast_make_intlit(Token.intval);
 		next();
 	} else {
 		fprintf(stderr, "syntax error on line %d: primary expression excpeted.\n", Line);
@@ -68,7 +68,7 @@ static struct ASTnode* binexpr(int precedence) {
 
 	left = primary();
 	int tt = Token.type;
-	if (tt == T_EOF) {
+	if (tt == T_SEMI) {
 		return (left);
 	}
 
@@ -76,10 +76,10 @@ static struct ASTnode* binexpr(int precedence) {
 	while (tp > precedence) {
 		next();
 		right = binexpr(tp);
-		left = make_astnode(arithop(tt), left, right, 0); // join right into left
+		left = ast_make_binary(arithop(tt), left, right); // join right into left
 
 		tt = Token.type;
-		if (tt == T_EOF) {
+		if (tt == T_SEMI) {
 			return (left);
 		}
 		tp = op_precedence(tt);
@@ -87,8 +87,32 @@ static struct ASTnode* binexpr(int precedence) {
 	return (left);
 }
 
+static void match(int t) {
+	if (Token.type == t) {
+		next();
+	} else {
+		fprintf(stderr, "syntax error on line %d: %s excpected, got %s.\n"
+				, Line, token_typename[t], token_typename[Token.type]);
+		exit(1);
+	}
+}
+
+// parse one or multiple statements
+static struct ASTnode* statements(void) {
+	struct ASTblocknode *res = (struct ASTblocknode*)ast_make_block();
+	while (1) {
+		match(T_PRINT);
+		struct ASTnode *tree = ast_make_unary(A_PRINT, binexpr(0));
+		llist_pushback(&res->st, tree);
+		match(T_SEMI);
+		if (Token.type == T_EOF) {
+			return ((struct ASTnode*)res);
+		}
+	}
+}
+
 // Parse ans return the full ast
 struct ASTnode* parse(void) {
 	next();
-	return (binexpr(0));
+	return (statements());
 }
