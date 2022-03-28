@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "scan.h"
-#include "scan.h"
 #include "defs.h"
 #include "ast.h"
 
 static struct token Token; // current token for parsing
+
+const char *token_typename[6] = { "T_PLUS", "T_MINUS", "T_STAR", "T_SLASH", "T_INTLIT", "T_EOF" };
 
 // Check that we have a binary operator and return its precedence.
 static int op_precedence(int t) {
@@ -17,7 +18,7 @@ static int op_precedence(int t) {
 		case T_SLASH:
 			return (20);
 		default:
-			fprintf(stderr, "syntax error on line %d: operator expeted, got %d.\n", Line, t);
+			fprintf(stderr, "syntax error on line %d: operator expeted, got %s.\n", Line, token_typename[t]);
 			exit(1);
 	}
 }

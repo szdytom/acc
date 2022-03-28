@@ -13,6 +13,7 @@ enum {
 	T_INTLIT,
 	T_EOF
 };
+extern const char *token_typename[6];
 
 // AST nodes
 enum {
