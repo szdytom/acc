@@ -1,5 +1,6 @@
 #! /bin/bash
 
+set -e
 for input in ./tests/*
 do
 	./acc $input

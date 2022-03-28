@@ -3,10 +3,9 @@
 #include "scan.h"
 #include "defs.h"
 #include "ast.h"
+#include "symbol.h"
 
 static struct token Token; // current token for parsing
-
-const char *token_typename[] = { "EOF", ";", "+", "-", "*", "/", "print", "integer literal" };
 
 // Check that we have a binary operator and return its precedence.
 static int op_precedence(int t) {
@@ -55,6 +54,14 @@ static struct ASTnode* primary(void) {
 	if (Token.type == T_INTLIT) {
 		res = ast_make_intlit(Token.intval);
 		next();
+	} else if (Token.type == T_INDENT) {
+		int id = findglob(Text);
+		if (id == -1) {
+			fprintf(stderr, "syntax error on line %d: unknown indentifier %s.\n", Line, Text);
+			exit(1);
+		}
+		next();
+		return (ast_make_var(id));
 	} else {
 		fprintf(stderr, "syntax error on line %d: primary expression excpeted.\n", Line);
 		exit(1);
@@ -87,6 +94,7 @@ static struct ASTnode* binexpr(int precedence) {
 	return (left);
 }
 
+// match a token or report syntax error
 static void match(int t) {
 	if (Token.type == t) {
 		next();
@@ -97,14 +105,75 @@ static void match(int t) {
 	}
 }
 
+// check current token's type or report syntax error.
+static void check(int t) {
+	if (Token.type != t) {
+		fprintf(stderr, "syntax error on line %d: %s excpected, got %s.\n"
+				, Line, token_typename[t], token_typename[Token.type]);
+		exit(1);
+	}
+}
+
+// parse an expression
+static struct ASTnode* expression(void) {
+	return binexpr(0);
+}
+
+// parse one print statement
+static struct ASTnode* print_statement(void) {
+	match(T_PRINT);
+	struct ASTnode *res = ast_make_unary(A_PRINT, expression());
+	return res;
+}
+
+// parse variable declaration statement
+static void var_declaration(void) {
+	match(T_INT);
+	check(T_INDENT);
+	if (findglob(Text) != -1) {
+		fprintf(stderr, "syntax error on line %d: variable redeclaration.\n", Line);
+		exit(1);
+	}
+	addglob(Text);
+	next();
+}
+
+// parse value assignment statement
+static struct ASTnode* assign_statement(void) {
+	check(T_INDENT);
+
+	int left = findglob(Text);
+	if (left == -1) {
+		fprintf(stderr, "syntax error on line %d: unknown indentifier %s.\n", Line, Text);
+		exit(1);
+	}
+
+	next();
+	match(T_EQUAL);
+	return ast_make_assign(A_ASSIGN, left, expression());
+}
+
 // parse one or multiple statements
 static struct ASTnode* statements(void) {
 	struct ASTblocknode *res = (struct ASTblocknode*)ast_make_block();
 	while (1) {
-		match(T_PRINT);
-		struct ASTnode *tree = ast_make_unary(A_PRINT, binexpr(0));
-		llist_pushback(&res->st, tree);
+		struct ASTnode *s = NULL;
+		if (Token.type == T_PRINT) {
+			s = print_statement();
+		} else if (Token.type == T_INT) {
+			var_declaration();
+		} else if (Token.type == T_INDENT) {
+			s = assign_statement();
+		} else {
+			fprintf(stderr, "syntax error on line %d: statement expected.\n", Line);
+			exit(1);
+		}
+
 		match(T_SEMI);
+		if (s) {
+			llist_pushback(&res->st, s);
+		}
+
 		if (Token.type == T_EOF) {
 			return ((struct ASTnode*)res);
 		}

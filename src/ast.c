@@ -31,6 +31,19 @@ struct ASTnode* ast_make_intlit(int val) {
 	return ((struct ASTnode*)x);
 }
 
+// Make an AST variable value node
+struct ASTnode* ast_make_var(int id) {
+	struct ASTvarnode *x = malloc(sizeof(struct ASTvarnode));
+	if (x == NULL) {
+		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
+		exit(1);
+	}
+
+	x->op = A_VAR;
+	x->id = id;
+	return ((struct ASTnode*)x);
+}
+
 // Make a unary AST node: only one child
 struct ASTnode* ast_make_unary(int op, struct ASTnode *c) {
 	struct ASTunnode *x = malloc(sizeof(struct ASTunnode));
@@ -57,12 +70,29 @@ struct ASTnode* ast_make_block() {
 	return ((struct ASTnode*)x);
 }
 
+// Make a assignment ast node
+struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
+	struct ASTassignnode *x = malloc(sizeof(struct ASTassignnode));
+	if (x == NULL) {
+		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
+		exit(1);
+	}
+
+	x->op = op;
+	x->left = left;
+	x->right = right;
+	return ((struct ASTnode*)x);
+}
+
 // translate ast operation type to ast node type
 int ast_type(int t) {
 	if (t == A_ADD || t == A_SUB || t == A_MUL || t == A_DIV) {
 		return (N_BIN);
 	}
-	if (t == A_INTLIT) {
+	if (t == A_ASSIGN) {
+		return (N_ASSIGN);
+	}
+	if (t == A_INTLIT || t == A_VAR) {
 		return (N_LEAF);
 	}
 	if (t == A_BLOCK) {
@@ -82,7 +112,10 @@ void free_ast(struct ASTnode *x) {
 	}
 
 	int nt = ast_type(x->op);
-	if (nt == N_BIN) {
+	if (nt == N_ASSIGN) {
+		struct ASTassignnode *t = (struct ASTassignnode*)x;
+		free_ast(t->right);
+	} else if (nt == N_BIN) {
 		struct ASTbinnode *t = (struct ASTbinnode*)x;
 		free_ast(t->left);
 		free_ast(t->right);

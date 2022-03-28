@@ -7,6 +7,8 @@ struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *ri
 struct ASTnode* ast_make_intlit(int val);
 struct ASTnode* ast_make_unary(int op, struct ASTnode *c);
 struct ASTnode* ast_make_block();
+struct ASTnode* ast_make_var(int id);
+struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right);
 int ast_type(int t);
 void free_ast(struct ASTnode *x);
 

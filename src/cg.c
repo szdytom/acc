@@ -4,6 +4,7 @@
 #include <string.h>
 #include "defs.h"
 #include "ast.h"
+#include "symbol.h"
 
 static FILE *Outfile;
 
@@ -125,6 +126,24 @@ static void cgprint(int r) {
 	free_reg(r);
 }
 
+// Load a global variable into a register
+static int cgload_glob(char *name) {
+	int r = alloc_reg();
+	fprintf(Outfile, "\tmovq\t%s(%%rip), %s\n", name, reglist[r]);
+	return (r);
+}
+
+// Store a register's value into a variable
+static void cgstore_glob(int r, char *name) {
+	fprintf(Outfile, "\tmovq\t%s, %s(%%rip)\n", reglist[r], name);
+	free_reg(r);
+}
+
+// init a global variable
+static void cginit_glob(char *name) {
+	fprintf(Outfile, "\t.comm\t%s,8,8\n", name);
+}
+
 // open output file of generated code
 void open_outputfile(char *filename) {
 	Outfile = fopen(filename, "w");
@@ -146,11 +165,17 @@ void cg_unload(void) {
 // Return value register id.
 static int cgenerate_ast(struct ASTnode *rt) {
 	int nt = ast_type(rt->op);
-	
+
 	if (nt == N_LEAF) {
 		if (rt->op == A_INTLIT) {
 			struct ASTintnode *x = (struct ASTintnode*)rt;
 			return (cgload_int(x->val));
+		} else if (rt->op == A_VAR) {
+			struct ASTvarnode *x = (struct ASTvarnode*)rt;
+			return (cgload_glob(array_get(&Gsym, x->id)));
+		} else {
+			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
+			exit(1);
 		}
 	} else if (nt == N_BIN) {
 		struct ASTbinnode *x = (struct ASTbinnode*)rt;
@@ -180,6 +205,17 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
 			exit(1);
 		}
+	} else if (nt == N_ASSIGN) {
+		struct ASTassignnode *x = (struct ASTassignnode*)rt;
+		int cv = cgenerate_ast(x->right);
+
+		if (rt->op == A_ASSIGN) {
+			cgstore_glob(cv, array_get(&Gsym, x->left));
+			return (-1);
+		} else {
+			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
+			exit(1);
+		}
 	} else if (nt == N_MULTI) {
 		struct ASTblocknode *x = (struct ASTblocknode*)rt;
 		int val = -1;
@@ -200,6 +236,10 @@ static int cgenerate_ast(struct ASTnode *rt) {
 
 // generates code
 void cg_main(struct ASTnode *rt) {
+	for (int i = 0; i < Gsym.length; ++i) {
+		cginit_glob(array_get(&Gsym, i));
+	}
+
 	cgpreamble();
 	cgenerate_ast(rt);
 	cgpostamble();
