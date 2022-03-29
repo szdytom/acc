@@ -54,7 +54,7 @@ static struct trie_node* trie_createnode(void) {
 
 static void trie_set(char *str, int val) {
 	struct trie_node *p = root;
-	
+
 	int n = strlen(str);
 	for (int i = 0; i < n; ++i) {
 		int x = indent_char_id(str[i]);
@@ -81,14 +81,21 @@ static int trie_get(char *str) {
 	return (p->val);
 }
 
+static int IsSymbolListLoaded = 0;
+
 // init global symbol table
 void symbol_init(void) {
+	IsSymbolListLoaded = 1;
 	array_init(&Gsym);
 	root = trie_createnode();
 }
 
 // unload global symbol table
 void symbol_unload(void) {
+	if (!IsSymbolListLoaded) {
+		return;
+	}
+
 	for (int i = 0; i < Gsym.length; ++i) {
 		free(array_get(&Gsym, i));
 	}

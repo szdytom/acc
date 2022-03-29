@@ -2,9 +2,11 @@
 # Executables
 acc
 a
+a.out
 
 # Output
 *.s
+*.ll
 
 # C compile
 *.o
