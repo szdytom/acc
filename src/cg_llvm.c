@@ -60,7 +60,7 @@ static int cgcomp_i32(int x, int y, char *op) {
 // Load an int literal
 static int cgload_lit_i32(int val) {
 	int r = alloc_reg();
-	fprintf(Outfile, "\t%%%d = freeze i32 %d\n", r, val);
+	fprintf(Outfile, "\t%%%d = select i1 true, i32 %d, i32 undef\n", r, val);
 	return (r);
 }
 
