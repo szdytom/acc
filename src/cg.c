@@ -139,6 +139,45 @@ static void cgstore_glob(int r, char *name) {
 	free_reg(r);
 }
 
+// Compare two registers.
+static int cgcompare(int r1, int r2, char *how) {
+	fprintf(Outfile, "\tcmpq\t%s, %s\n", reglist[r2], reglist[r1]);
+	fprintf(Outfile, "\t%s\t%sb\n", how, reglist[r2]);
+	fprintf(Outfile, "\tandq\t$255,%s\n", reglist[r2]);
+	free_reg(r1);
+	return (r2);
+}
+
+// Compare if two registers are equal
+static int cgequal(int r1, int r2) {
+	return (cgcompare(r1, r2, "sete"));
+}
+
+// Compare if two registers are not equal
+static int cgnotequal(int r1, int r2) {
+	return (cgcompare(r1, r2, "setne"));
+}
+
+// Compare if r1 is greater than r2
+static int cggreaterthan(int r1, int r2) {
+	return (cgcompare(r1, r2, "setg"));
+}
+
+// Compare if r1 is less than r2
+static int cglessthan(int r1, int r2) {
+	return (cgcompare(r1, r2, "setl"));
+}
+
+// Compare if r1 is greater or equal than r2
+static int cggreaterequal(int r1, int r2) {
+	return (cgcompare(r1, r2, "setge"));
+}
+
+// Compare if r1 is less or equal than r2
+static int cglessequal(int r1, int r2) {
+	return (cgcompare(r1, r2, "setle"));
+}
+
 // init a global variable
 static void cginit_glob(char *name) {
 	fprintf(Outfile, "\t.comm\t%s,8,8\n", name);
@@ -190,6 +229,18 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			return (cgmul(lv, rv));
 		} else if (rt->op == A_DIV) {
 			return (cgdiv(lv, rv));
+		} else if (rt->op == A_EQ) {
+			return (cgequal(lv, rv));
+		} else if (rt->op == A_NE) {
+			return (cgnotequal(lv, rv));
+		} else if (rt->op == A_LT) {
+			return (cglessthan(lv, rv));
+		} else if (rt->op == A_GT) {
+			return (cggreaterthan(lv, rv));
+		} else if (rt->op == A_LE) {
+			return (cglessequal(lv, rv));
+		} else if (rt->op == A_GE) {
+			return (cggreaterequal(lv, rv));
 		} else {
 			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
 			exit(1);

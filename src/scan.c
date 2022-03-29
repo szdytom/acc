@@ -10,7 +10,9 @@ int Line = 1;
 FILE *Infile;
 char *Text;
 
-const char *token_typename[] = { "EOF", ";", "=", "+", "-", "*", "/", "print", "int", "integer literal", "indentifier" };
+const char *token_typename[] = { "EOF", ";", "=", "+", "-", "*", "/",
+	"==", "!=", "<", ">", "<=", ">=",
+	"print", "int", "integer literal", "indentifier" };
 
 // open input file
 void open_inputfile(char *filename) {
@@ -129,16 +131,53 @@ void scan(struct token *t) {
 
 	if (c == '+') {
 		t->type = T_PLUS;
+		next();
 	} else if (c == '-') {
 		t->type = T_MINUS;
+		next();
 	} else if (c == '*') {
 		t->type = T_STAR;
+		next();
 	} else if (c == '/') {
 		t->type = T_SLASH;
+		next();
 	} else if (c == ';') {
 		t->type = T_SEMI;
+		next();
 	} else if (c == '=') {
-		t->type = T_EQUAL;
+		t->type = T_ASSIGN;
+		next();
+		c = preview();
+		if (c == '=') {
+			t->type = T_EQ;
+			next();
+		}
+	} else if (c == '!') {
+		next();
+		c = preview();
+		if (c == '=') {
+			t->type = T_NE;
+			next();
+		} else {
+			fprintf(stderr, "Unrecognised character %c on line %d.\n", c, Line);
+			exit(1);
+		}
+	} else if (c == '<') {
+		t->type = T_LT;
+		next();
+		c = preview();
+		if (c == '=') {
+			t->type = T_LE;
+			next();
+		}
+	} else if (c == '>') {
+		t->type = T_GT;
+		next();
+		c = preview();
+		if (c == '=') {
+			t->type = T_GE;
+			next();
+		}
 	} else {
 		// If it's a digit, scan the literal integer value in
 		if (isdigit(c)) {
@@ -154,10 +193,10 @@ void scan(struct token *t) {
 				// not a keyword, so it should be an indentifier.
 				t->type = T_INDENT;
 			}
+		} else {
+			fprintf(stderr, "Unrecognised character %c on line %d.\n", c, Line);
+			exit(1);
 		}
-		return;
 	}
-
-	next();
 }
 

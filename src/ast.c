@@ -84,25 +84,24 @@ struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
 	return ((struct ASTnode*)x);
 }
 
-// translate ast operation type to ast node type
+// Translate ast operation type to ast node type
 int ast_type(int t) {
-	if (t == A_ADD || t == A_SUB || t == A_MUL || t == A_DIV) {
-		return (N_BIN);
+	switch (t) {
+		case A_ADD: case A_SUB: case A_MUL: case A_DIV:
+		case A_EQ: case A_NE: case A_GT: case A_LT: case A_GE: case A_LE:
+			return (N_BIN);
+		case A_ASSIGN:
+			return (N_ASSIGN);
+		case A_INTLIT: case A_VAR:
+			return (N_LEAF);
+		case A_BLOCK:
+			return (N_MULTI);
+		case A_PRINT:
+			return (N_UN);
+		default:
+			fprintf(stderr, "%s: unknown operation type %d.\n", __FUNCTION__, t);
+			exit(1);
 	}
-	if (t == A_ASSIGN) {
-		return (N_ASSIGN);
-	}
-	if (t == A_INTLIT || t == A_VAR) {
-		return (N_LEAF);
-	}
-	if (t == A_BLOCK) {
-		return (N_MULTI);
-	}
-	if (t == A_PRINT) {
-		return (N_UN);
-	}
-	fprintf(stderr, "Unknown operation type %d.\n", t);
-	exit(1);
 }
 
 // free an AST's memory

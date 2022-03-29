@@ -10,12 +10,14 @@ static struct token Token; // current token for parsing
 // Check that we have a binary operator and return its precedence.
 static int op_precedence(int t) {
 	switch (t) {
-		case T_PLUS:
-		case T_MINUS:
+		case T_GT: case T_GE: case T_LT: case T_LE:
 			return (10);
-		case T_STAR:
-		case T_SLASH:
+		case T_EQ: case T_NE:
 			return (20);
+		case T_PLUS: case T_MINUS:
+			return (40);
+		case T_STAR: case T_SLASH:
+			return (80);
 		default:
 			fprintf(stderr, "syntax error on line %d: operator expeted, got %s.\n", Line, token_typename[t]);
 			exit(1);
@@ -24,19 +26,27 @@ static int op_precedence(int t) {
 
 // Convert a arithmetic token into an AST operation.
 static int arithop(int t) {
-	switch (t) {
-		case T_PLUS:
-			return (A_ADD);
-		case T_MINUS:
-			return (A_SUB);
-		case T_STAR:
-			return (A_MUL);
-		case T_SLASH:
-			return (A_DIV);
-		default:
-			fprintf(stderr, "unknown token in arithop() on line %d\n", Line);
-			exit(1);
+	static const int map[][2] = {
+		{T_PLUS,	A_ADD},
+		{T_MINUS,	A_SUB},
+		{T_STAR,	A_MUL},
+		{T_SLASH,	A_DIV},
+		{T_EQ,		A_EQ},
+		{T_NE,		A_NE},
+		{T_LT,		A_LT},
+		{T_LE,		A_LE},
+		{T_GT,		A_GT},
+		{T_GE,		A_GE},
+		{T_EOF}
+	};
+
+	for (int i = 0; map[i][0] != T_EOF; ++i) {
+		if (t == map[i][0]) {
+			return map[i][1];
+		}
 	}
+	fprintf(stderr, "syntax error on line %d: expected an operator, got %s.\n", Line, token_typename[t]);
+	exit(1);
 }
 
 static void next(void) {
@@ -48,9 +58,6 @@ static void next(void) {
 static struct ASTnode* primary(void) {
 	struct ASTnode *res;
 
-	// For an INTLIT token, make a leaf AST node for it
-	// and scan in the next token. Otherwise, a syntax error
-	// for any other token type.
 	if (Token.type == T_INTLIT) {
 		res = ast_make_intlit(Token.intval);
 		next();
@@ -149,7 +156,7 @@ static struct ASTnode* assign_statement(void) {
 	}
 
 	next();
-	match(T_EQUAL);
+	match(T_ASSIGN);
 	return ast_make_assign(A_ASSIGN, left, expression());
 }
 

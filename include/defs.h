@@ -12,16 +12,18 @@ struct token {
 // Tokens
 enum {
 	T_EOF,
-	T_SEMI, T_EQUAL,
+	T_SEMI, T_ASSIGN,
 	T_PLUS, T_MINUS, T_STAR, T_SLASH,
+	T_EQ, T_NE, T_LT, T_GT, T_LE, T_GE,
 	T_PRINT, T_INT,
 	T_INTLIT, T_INDENT,
 };
-extern const char *token_typename[11];
+extern const char *token_typename[18];
 
 // AST operation types
 enum {
 	A_ADD, A_SUB, A_MUL, A_DIV,
+	A_EQ, A_NE, A_LT, A_GT, A_LE, A_GE,
 	A_INTLIT, A_VAR,
 	A_BLOCK,
 	A_PRINT,
