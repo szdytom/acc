@@ -17,9 +17,9 @@ enum {
 	T_ASSIGN,
 	T_PLUS, T_MINUS, T_STAR, T_SLASH,
 	T_EQ, T_NE, T_LT, T_GT, T_LE, T_GE,
-	T_PRINT, T_INT, T_IF, T_ELSE,
+	T_PRINT, T_INT, T_IF, T_ELSE, T_WHILE,
 	T_INTLIT, T_INDENT,
 };
-extern const char *token_typename[23];
+extern const char *token_typename[24];
 
 #endif

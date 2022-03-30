@@ -104,7 +104,7 @@ int ast_type(int t) {
 	switch (t) {
 		case A_ADD: case A_SUB: case A_MUL: case A_DIV:
 		case A_EQ: case A_NE: case A_GT: case A_LT: case A_GE: case A_LE:
-		case A_IF:
+		case A_IF: case A_WHILE:
 			return (N_BIN);
 		case A_ASSIGN:
 			return (N_ASSIGN);

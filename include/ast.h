@@ -10,7 +10,7 @@ enum {
 	A_EQ, A_NE, A_LT, A_GT, A_LE, A_GE,
 	A_INTLIT, A_VAR,
 	A_BLOCK,
-	A_PRINT, A_IF,
+	A_PRINT, A_IF, A_WHILE,
 	A_SOUL // what?
 };
 

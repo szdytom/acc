@@ -11,7 +11,7 @@ static const char *ast_opname[] = {
 	"==", "!=", "<", ">", "<=", ">=",
 	"int", "var",
 	"block",
-	"print", "if",
+	"print", "if", "while"
 };
 
 static int tabs;
@@ -57,6 +57,14 @@ static void cgenerate_dfs(struct ASTnode *x) {
 			fprintf(Outfile, "--->IF (cond left right)\n");
 			tabs += 1;
 			cgenerate_dfs(t->cond);
+			cgenerate_dfs(t->left);
+			cgenerate_dfs(t->right);
+			tabs -= 1;
+		} else if (x->op == A_WHILE) {
+			struct ASTbinnode *t = (struct ASTbinnode*)x;
+			cgprint_tabs();
+			fprintf(Outfile, "--->WHILE(%s) (cond body)\n", ast_opname[t->op]);
+			tabs += 1;
 			cgenerate_dfs(t->left);
 			cgenerate_dfs(t->right);
 			tabs -= 1;

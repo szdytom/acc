@@ -7,8 +7,8 @@ clean:
 	rm -f acc a.out out.s out.ll
 
 test_x64: acc
-	tools/test_x64.bash
+	( cd tests; ./test_x64.sh )
 
 test_llvm: acc
-	tools/test_llvm.bash
+	( cd tests; ./test_llvm.sh )
 

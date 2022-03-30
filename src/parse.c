@@ -228,6 +228,16 @@ static struct ASTnode* if_statement(void) {
 	return (ast_make_if(then, else_then, cond));
 }
 
+// parse an while statement
+static struct ASTnode* while_statement(void) {
+	match(T_WHILE);
+	match(T_LP);
+	struct ASTnode* cond = expression();
+	match(T_RP);
+	struct ASTnode* body = statement();
+	return (ast_make_binary(A_WHILE, cond, body));
+}
+
 // parse one statement
 static struct ASTnode* statement(void) {
 	if (Token.type == T_SEMI) {
@@ -238,6 +248,8 @@ static struct ASTnode* statement(void) {
 		return (var_declaration());
 	} else if (Token.type == T_IF) {
 		return (if_statement());
+	} else if (Token.type == T_WHILE) {
+		return (while_statement());
 	} else {
 		skip_semi = 0;
 		struct ASTnode *res = expression();

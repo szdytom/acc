@@ -6,12 +6,12 @@
 #include "util/array.h"
 #include "util/linklist.h"
 
-static int alloc_tag() {
+static int alloc_tag(void) {
 	static int id = 0;
 	return (id++);
 }
 
-static int alloc_label() {
+static int alloc_label(void) {
 	static int id = 0;
 	return (id++);
 }
@@ -129,6 +129,21 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			cgprint_label(Lelse);
 			cgenerate_ast(x->right);
 			cgjmp_always(Lend);
+
+			cgprint_label(Lend);
+			return (-1);
+		} else if (rt->op == A_WHILE) {
+			struct ASTbinnode *x = (struct ASTbinnode*)rt;
+			int Lstart = alloc_label(), Lbody = alloc_label(), Lend = alloc_label();
+			cgjmp_always(Lstart);
+
+			cgprint_label(Lstart);
+			int condv = cgenerate_ast(x->left);
+			cgjmp_if_i32(condv, Lbody, Lend);
+
+			cgprint_label(Lbody);
+			cgenerate_ast(x->right);
+			cgjmp_always(Lstart);
 
 			cgprint_label(Lend);
 			return (-1);

@@ -14,7 +14,7 @@ static char *reglist[4] = { "%r8", "%r9", "%r10", "%r11" };
 static int usedreg[4];
 
 // Get a label number for jump
-static int alloc_label() {
+static int alloc_label(void) {
 	static int id = 0;
 	return (id++);
 }
@@ -225,6 +225,19 @@ static int cgenerate_ast(struct ASTnode *rt) {
 
 			cgprint_label(Lelse);
 			free_reg(cgenerate_ast(x->right));
+
+			cgprint_label(Lend);
+			return (-1);
+		} else if (rt->op == A_WHILE) {
+			struct ASTbinnode *x = (struct ASTbinnode*)rt;
+			int Lstart = alloc_label();
+			int Lend = alloc_label();
+			
+			cgprint_label(Lstart);
+			int condv = cgenerate_ast(x->left);
+			cgjmp_condfalse(Lend, condv);
+			free_reg(cgenerate_ast(x->right));
+			cgjmp_always(Lstart);
 
 			cgprint_label(Lend);
 			return (-1);
