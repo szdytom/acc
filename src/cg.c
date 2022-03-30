@@ -28,6 +28,8 @@ void cg_main(int target, struct ASTnode *rt) {
 		cgx64_generate(rt);
 	} else if (target == CG_LLVM) {
 		cgllvm_generate(rt);
+	} else if (target == CG_AST) {
+		cgast_generate(rt);
 	} else {
 		fprintf(stderr, "Unknow target %d.\n", target);
 		exit(1);

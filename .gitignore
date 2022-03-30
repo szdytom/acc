@@ -7,6 +7,7 @@ a.out
 # Output
 *.s
 *.ll
+out.txt
 
 # C compile
 *.o

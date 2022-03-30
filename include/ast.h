@@ -5,13 +5,12 @@
 
 // AST operation types
 enum {
+	A_ASSIGN,
 	A_ADD, A_SUB, A_MUL, A_DIV,
 	A_EQ, A_NE, A_LT, A_GT, A_LE, A_GE,
 	A_INTLIT, A_VAR,
-	A_IF,
 	A_BLOCK,
-	A_PRINT,
-	A_ASSIGN,
+	A_PRINT, A_IF,
 	A_SOUL // what?
 };
 

@@ -23,6 +23,7 @@ acc target inputfile (outputfile)
 Output targets now includes:
 - `x86_64`: Intel's x84-64 ASM
 - `llvm`: LLVM's IR
+- `ast`: (used for debugging) Abstruct Syntax Tree 
 
 Example:
 

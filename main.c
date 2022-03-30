@@ -43,6 +43,11 @@ int main(int argc, char *argv[]) {
 		if (!outfile_opened) {
 			open_outputfile("out.ll");
 		}
+	} else if (!strcmp(argv[1], "ast")) {
+		target = CG_AST;
+		if (!outfile_opened) {
+			open_outputfile("out.txt");
+		}
 	} else {
 		fprintf(stderr, "Unknow target %s.\n", argv[1]);
 	}

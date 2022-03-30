@@ -16,10 +16,14 @@ void cgx64_generate(struct ASTnode *rt);
 // cg_llvm.c
 void cgllvm_generate(struct ASTnode *rt);
 
+// cg_ast.c
+void cgast_generate(struct ASTnode *rt);
+
 // targets
 enum {
 	CG_X64,		// Intel x86_64
 	CG_LLVM,	// LLVM IR
+	CG_AST,		// Abstruct Syntax Tree
 };
 
 #endif
