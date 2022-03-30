@@ -1,7 +1,7 @@
 #ifndef ACC_CG_H
 #define ACC_CG_H
 
-#include "defs.h"
+#include "ast.h"
 
 extern FILE *Outfile;
 

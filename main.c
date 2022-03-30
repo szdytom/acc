@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "scan.h"
-#include "defs.h"
 #include "parse.h"
 #include "cg.h"
 #include "ast.h"
@@ -14,7 +13,7 @@ static void usage(char *prog) {
 	exit(1);
 }
 
-//Do cClean up job
+//Do clean up job
 void unload(void) {
 	scan_unload();
 	cg_unload();

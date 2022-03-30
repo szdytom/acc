@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cg.h"
-#include "defs.h"
 #include "ast.h"
 #include "symbol.h"
 #include "util/array.h"
@@ -14,6 +13,12 @@ static const int reg_count = 4;
 static char *reglist[4] = { "%r8", "%r9", "%r10", "%r11" };
 static int usedreg[4];
 
+// Get a label number for jump
+static int alloc_label() {
+	static int id = 0;
+	return (id++);
+}
+
 // Set all registers free
 static void free_all_reg(void) {
 	for (int i = 0; i < reg_count; ++i) {
@@ -21,6 +26,7 @@ static void free_all_reg(void) {
 	}
 }
 
+// Allocate a new register to use or report "Out of registers"
 static int alloc_reg(void) {
 	for (int i = 0; i < reg_count; ++i) {
 		if (!usedreg[i]) {
@@ -138,48 +144,50 @@ static int cgload_glob(char *name) {
 }
 
 // Store a register's value into a variable
-static void cgstore_glob(int r, char *name) {
+static int cgstore_glob(int r, char *name) {
 	fprintf(Outfile, "\tmovq\t%s, %s(%%rip)\n", reglist[r], name);
-	free_reg(r);
+	return (r);
 }
 
 // Compare two registers.
-static int cgcompare(int r1, int r2, char *how) {
+static int cgcompare(int r1, int r2, int op) {
+	static const int map_s[] = {	A_EQ,	A_NE,	A_LT,	A_LE,	A_GT,	A_GE,	0};
+	static const char *map_t[] = { "sete",	"setne","setl",	"setle","setg",	"setge",NULL};
+	int how = -1;
+	for (int i = 0; map_t[i] != NULL; ++i) {
+		if (map_s[i] == op) {
+			how = i;
+			break;
+		}
+	}
+
+	if (how == -1) {
+		fprintf(stderr, "%s: unknown compare operator %d.\n", __FUNCTION__, op);
+		exit(1);
+	}
+
 	fprintf(Outfile, "\tcmpq\t%s, %s\n", reglist[r2], reglist[r1]);
-	fprintf(Outfile, "\t%s\t%sb\n", how, reglist[r2]);
+	fprintf(Outfile, "\t%s\t%sb\n", map_t[how], reglist[r2]);
 	fprintf(Outfile, "\tandq\t$255,%s\n", reglist[r2]);
 	free_reg(r1);
 	return (r2);
 }
 
-// Compare if two registers are equal
-static int cgequal(int r1, int r2) {
-	return (cgcompare(r1, r2, "sete"));
+// Jump to label when condition register is false(0).
+static void cgjmp_condfalse(int Lt, int x) {
+	fprintf(Outfile, "\tcmpq\t$0, %s\n", reglist[x]);
+	fprintf(Outfile, "\tje\t.L%d\n", Lt);
+	free_reg(x);
 }
 
-// Compare if two registers are not equal
-static int cgnotequal(int r1, int r2) {
-	return (cgcompare(r1, r2, "setne"));
+// Jump to label no matter what.
+static void cgjmp_always(int Lt) {
+	fprintf(Outfile, "\tjmp\t.L%d\n", Lt);
 }
 
-// Compare if r1 is greater than r2
-static int cggreaterthan(int r1, int r2) {
-	return (cgcompare(r1, r2, "setg"));
-}
-
-// Compare if r1 is less than r2
-static int cglessthan(int r1, int r2) {
-	return (cgcompare(r1, r2, "setl"));
-}
-
-// Compare if r1 is greater or equal than r2
-static int cggreaterequal(int r1, int r2) {
-	return (cgcompare(r1, r2, "setge"));
-}
-
-// Compare if r1 is less or equal than r2
-static int cglessequal(int r1, int r2) {
-	return (cgcompare(r1, r2, "setle"));
+// Print label to Outfile
+static void cgprint_label(int Lt) {
+	fprintf(Outfile, ".L%d:\n", Lt);
 }
 
 // init a global variable
@@ -205,6 +213,23 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			exit(1);
 		}
 	} else if (nt == N_BIN) {
+		if (rt->op == A_IF) {
+			struct ASTifnode *x = (struct ASTifnode*)rt;
+			int Lelse = alloc_label();
+			int Lend = alloc_label();
+			int condv = cgenerate_ast(x->cond);
+
+			cgjmp_condfalse(Lelse, condv);
+			free_reg(cgenerate_ast(x->left));
+			cgjmp_always(Lend);
+
+			cgprint_label(Lelse);
+			free_reg(cgenerate_ast(x->right));
+
+			cgprint_label(Lend);
+			return (-1);
+		}
+
 		struct ASTbinnode *x = (struct ASTbinnode*)rt;
 		int lv = cgenerate_ast(x->left);
 		int rv = cgenerate_ast(x->right);
@@ -217,18 +242,9 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			return (cgmul(lv, rv));
 		} else if (rt->op == A_DIV) {
 			return (cgdiv(lv, rv));
-		} else if (rt->op == A_EQ) {
-			return (cgequal(lv, rv));
-		} else if (rt->op == A_NE) {
-			return (cgnotequal(lv, rv));
-		} else if (rt->op == A_LT) {
-			return (cglessthan(lv, rv));
-		} else if (rt->op == A_GT) {
-			return (cggreaterthan(lv, rv));
-		} else if (rt->op == A_LE) {
-			return (cglessequal(lv, rv));
-		} else if (rt->op == A_GE) {
-			return (cggreaterequal(lv, rv));
+		} else if (A_EQ <= rt->op && rt->op <= A_GE) {
+			// a compare operator
+			return (cgcompare(lv, rv, rt->op));
 		} else {
 			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
 			exit(1);
@@ -249,8 +265,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		int cv = cgenerate_ast(x->right);
 
 		if (rt->op == A_ASSIGN) {
-			cgstore_glob(cv, array_get(&Gsym, x->left));
-			return (-1);
+			return (cgstore_glob(cv, array_get(&Gsym, x->left)));
 		} else {
 			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
 			exit(1);

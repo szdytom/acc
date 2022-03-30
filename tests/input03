@@ -1,6 +1,8 @@
-int x;
-x= 1;     print x;
-x= x + 1; print x;
-x= x + 1; print x;
-x= x + 1; print x;
-x= x + 1; print x;
+{
+  int x;
+  x= 1;     print x;
+  x= x + 1; print x;
+  x= x + 1; print x;
+  x= x + 1; print x;
+  x= x + 1; print x;
+}

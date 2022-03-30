@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "defs.h"
+#include "ast.h"
 #include "util/linklist.h"
 
 // Build and return a binary AST node
@@ -84,11 +84,27 @@ struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
 	return ((struct ASTnode*)x);
 }
 
+// Make a if statement ast node
+struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond) {
+	struct ASTifnode *x = malloc(sizeof(struct ASTifnode));
+	if (x == NULL) {
+		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
+		exit(1);
+	}
+
+	x->op = A_IF;
+	x->left = left;
+	x->right = right;
+	x->cond = cond;
+	return ((struct ASTnode*)x);
+}
+
 // Translate ast operation type to ast node type
 int ast_type(int t) {
 	switch (t) {
 		case A_ADD: case A_SUB: case A_MUL: case A_DIV:
 		case A_EQ: case A_NE: case A_GT: case A_LT: case A_GE: case A_LE:
+		case A_IF:
 			return (N_BIN);
 		case A_ASSIGN:
 			return (N_ASSIGN);
@@ -118,6 +134,9 @@ void free_ast(struct ASTnode *x) {
 		struct ASTbinnode *t = (struct ASTbinnode*)x;
 		free_ast(t->left);
 		free_ast(t->right);
+		if (x->op == A_IF) {
+			free_ast(((struct ASTifnode*)x)->cond);
+		}
 	} else if (nt == N_UN) {
 		struct ASTunnode *t = (struct ASTunnode*)x;
 		free_ast(t->c);

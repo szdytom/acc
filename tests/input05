@@ -1,0 +1,11 @@
+{
+  int i; int j;
+  i=16; j=16;
+  if (i < j) {
+    print i;
+  } else if (i == j) {
+    print j * i;
+  } else {
+    print j;
+  }
+}

@@ -1,13 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ast.h"
-#include "defs.h"
 #include "cg.h"
 #include "symbol.h"
 #include "util/array.h"
 #include "util/linklist.h"
 
-static int alloc_reg() {
+static int alloc_tag() {
+	static int id = 0;
+	return (id++);
+}
+
+static int alloc_label() {
 	static int id = 0;
 	return (id++);
 }
@@ -38,17 +42,19 @@ static void cginit_glob(char *name) {
 
 // Preform arithmetic operation between two i32
 static int cgarith_i32(int x, int y, char *op) {
-	int r = alloc_reg();
+	int r = alloc_tag();
 	fprintf(Outfile, "\t%%%d = %s i32 %%%d, %%%d\n", r, op, x, y);
 	return (r);
 }
 
 // Preform comparision between integers
 static int cgcomp_i(int x, int y, char *op, char *ty) {
-	int r1 = alloc_reg();
+	int r1 = alloc_tag();
 	fprintf(Outfile, "\t%%%d = icmp %s %s %%%d, %%%d\n", r1, op, ty, x, y);
-	int r2 = alloc_reg();
-	fprintf(Outfile, "\t%%%d = zext i1 %%%d to %s\n", r2, r1, ty);
+	int r2 = alloc_tag();
+	if (ty[0] != 'i' || ty[1] != '1' || ty[2] != '\0') {
+		fprintf(Outfile, "\t%%%d = zext i1 %%%d to %s\n", r2, r1, ty);
+	}
 	return (r2);
 }
 
@@ -59,26 +65,43 @@ static int cgcomp_i32(int x, int y, char *op) {
 
 // Load an int literal
 static int cgload_lit_i32(int val) {
-	int r = alloc_reg();
+	int r = alloc_tag();
 	fprintf(Outfile, "\t%%%d = select i1 true, i32 %d, i32 undef\n", r, val);
 	return (r);
 }
 
 // Load an int from a global variable
 static int cgload_glob_i32(char *name) {
-	int r = alloc_reg();
+	int r = alloc_tag();
 	fprintf(Outfile, "\t%%%d = load i32, i32* @%s, align 4\n", r, name);
 	return (r);
 }
 
 // Store an int into a global variable
-static void cgstore_glob_i32(int x, char *name) {
+static int cgstore_glob_i32(int x, char *name) {
 	fprintf(Outfile, "\tstore i32 %%%d, i32* @%s, align 4\n", x, name);
+	return (x);
 }
 
 // Print a i32
 static void cgprint(int x) {
 	fprintf(Outfile, "\tcall void (i32) @printint(i32 %%%d)\n", x);
+}
+
+// Jump to a label no matter what
+static void cgjmp_always(int x) {
+	fprintf(Outfile, "\tbr label %%L%d\n", x);
+}
+
+// Conditional jump
+static void cgjmp_if_i32(int cond, int Lthen, int Lelse) {
+	int rc = alloc_tag();
+	fprintf(Outfile, "\t%%%d = icmp ne i32 0, %%%d\n", rc, cond);
+	fprintf(Outfile, "\tbr i1 %%%d, label %%L%d, label %%L%d\n", rc, Lthen, Lelse);
+}
+
+static void cgprint_label(int L) {
+	fprintf(Outfile, "L%d:\n", L);
 }
 
 // generates llvm ir from ast
@@ -93,6 +116,24 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
 		exit(1);
 	} else if (nt == N_BIN) {
+		if (rt->op == A_IF) {
+			struct ASTifnode *x = (struct ASTifnode*)rt;
+			int Lthen = alloc_label(), Lelse = alloc_label(), Lend = alloc_label();
+			int condv = cgenerate_ast(x->cond);
+			cgjmp_if_i32(condv, Lthen, Lelse);
+
+			cgprint_label(Lthen);
+			cgenerate_ast(x->left);
+			cgjmp_always(Lend);
+
+			cgprint_label(Lelse);
+			cgenerate_ast(x->right);
+			cgjmp_always(Lend);
+
+			cgprint_label(Lend);
+			return (-1);
+		}
+
 		struct ASTbinnode *x = (struct ASTbinnode*)rt;
 		int lc = cgenerate_ast(x->left);
 		int rc = cgenerate_ast(x->right);
@@ -135,8 +176,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		int cv = cgenerate_ast(x->right);
 
 		if (rt->op == A_ASSIGN) {
-			cgstore_glob_i32(cv, array_get(&Gsym, x->left));
-			return (-1);
+			return (cgstore_glob_i32(cv, array_get(&Gsym, x->left)));
 		}
 		fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
 		exit(1);

@@ -1,7 +1,7 @@
 #ifndef ACC_SCAN_H
 #define ACC_SCAN_H
 
-#include "defs.h"
+#include "token.h"
 
 extern int Line;
 extern int Preview;

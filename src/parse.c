@@ -1,25 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "scan.h"
-#include "defs.h"
+#include "token.h"
 #include "ast.h"
 #include "symbol.h"
 
-static struct token Token; // current token for parsing
+static struct token Token;	// current token for parsing
+static int skip_semi = 0;	// can skip statement semi (after block)
 
 // Check that we have a binary operator and return its precedence.
+// operators with larger precedence value will be evaluated first
 static int op_precedence(int t) {
 	switch (t) {
-		case T_GT: case T_GE: case T_LT: case T_LE:
-			return (10);
-		case T_EQ: case T_NE:
+		case T_ASSIGN:
 			return (20);
-		case T_PLUS: case T_MINUS:
+		case T_GT: case T_GE: case T_LT: case T_LE:
 			return (40);
+		case T_EQ: case T_NE:
+			return (50);
+		case T_PLUS: case T_MINUS:
+			return (70);
 		case T_STAR: case T_SLASH:
-			return (80);
+			return (90);
 		default:
-			fprintf(stderr, "syntax error on line %d: operator expeted, got %s.\n", Line, token_typename[t]);
+			fprintf(stderr, "syntax error on line %d: expected an operator, got %s.\n", Line, token_typename[t]);
 			exit(1);
 	}
 }
@@ -37,6 +41,7 @@ static int arithop(int t) {
 		{T_LE,		A_LE},
 		{T_GT,		A_GT},
 		{T_GE,		A_GE},
+		{T_ASSIGN,	A_ASSIGN},
 		{T_EOF}
 	};
 
@@ -49,61 +54,28 @@ static int arithop(int t) {
 	exit(1);
 }
 
+// operator ssociativity direction
+// Return	0 if left to right, e.g. +
+// 		1 if right to left, e.g. =
+static int direction_rtl(int t) {
+	switch(t) {
+		case T_ASSIGN:
+			return (1);
+		default:
+			return (0);
+	}
+}
+
+// Next token
 static void next(void) {
 	scan(&Token);
 }
 
-// Parse a primary factor and return an
-// AST node representing it.
-static struct ASTnode* primary(void) {
-	struct ASTnode *res;
-
-	if (Token.type == T_INTLIT) {
-		res = ast_make_intlit(Token.intval);
-		next();
-	} else if (Token.type == T_INDENT) {
-		int id = findglob(Text);
-		if (id == -1) {
-			fprintf(stderr, "syntax error on line %d: unknown indentifier %s.\n", Line, Text);
-			exit(1);
-		}
-		next();
-		return (ast_make_var(id));
-	} else {
-		fprintf(stderr, "syntax error on line %d: primary expression excpeted.\n", Line);
-		exit(1);
-	}
-	return (res);
-}
-
-// Return an AST tree whose root is a binary operator
-static struct ASTnode* binexpr(int precedence) {
-	struct ASTnode *left, *right;
-
-	left = primary();
-	int tt = Token.type;
-	if (tt == T_SEMI) {
-		return (left);
-	}
-
-	int tp = op_precedence(tt);
-	while (tp > precedence) {
-		next();
-		right = binexpr(tp);
-		left = ast_make_binary(arithop(tt), left, right); // join right into left
-
-		tt = Token.type;
-		if (tt == T_SEMI) {
-			return (left);
-		}
-		tp = op_precedence(tt);
-	}
-	return (left);
-}
-
 // match a token or report syntax error
 static void match(int t) {
-	if (Token.type == t) {
+	if (t == T_SEMI && skip_semi) {
+		skip_semi = 0;
+	} else if (Token.type == t) {
 		next();
 	} else {
 		fprintf(stderr, "syntax error on line %d: %s excpected, got %s.\n"
@@ -121,20 +93,112 @@ static void check(int t) {
 	}
 }
 
+static struct ASTnode* statement(void);
+static struct ASTnode* expression(void);
+
+// Parse a primary factor and return an
+// AST node representing it.
+static struct ASTnode* primary(void) {
+	struct ASTnode *res;
+
+	if (Token.type == T_LP) {
+		// ( expr ) considered as primary
+		next();
+		res = expression();
+		match(T_RP);
+	} else if (Token.type == T_INTLIT) {
+		res = ast_make_intlit(Token.intval);
+		next();
+	} else if (Token.type == T_INDENT) {
+		int id = findglob(Text);
+		if (id == -1) {
+			fprintf(stderr, "syntax error on line %d: unknown indentifier %s.\n", Line, Text);
+			exit(1);
+		}
+		next();
+		return (ast_make_var(id));
+	} else {
+		fprintf(stderr, "syntax error on line %d: primary expression excpeted.\n", Line);
+		exit(1);
+	}
+	return (res);
+}
+
+// Check if it is binary operator
+static int is_binop(int t) {
+	return (T_ASSIGN <= t && t <= T_GE);
+}
+
+// Return an AST tree whose root is a binary operator
+static struct ASTnode* binexpr(int precedence) {
+	struct ASTnode *left, *right;
+
+	left = primary();
+	int tt = Token.type;
+	if (!is_binop(tt)) {
+		return (left);
+	}
+
+	int tp = op_precedence(tt);
+	while (tp > precedence) {
+		next();
+
+		if (direction_rtl(tt)) {
+			right = binexpr(precedence);
+			left = ast_make_assign(arithop(tt), ((struct ASTvarnode*)left)->id, right);
+		} else {
+			right = binexpr(tp);
+			left = ast_make_binary(arithop(tt), left, right); // join right into left
+		}
+
+		tt = Token.type;
+		if (!is_binop(tt)) {
+			return (left);
+		}
+		tp = op_precedence(tt);
+	}
+	return (left);
+}
+
+// parse one block of code, e.g. { a; b; }
+static struct ASTnode* parse_block(void) {
+	struct ASTblocknode* res = (struct ASTblocknode*)ast_make_block();
+
+	match(T_LB);
+	while (Token.type != T_RB) {
+		struct ASTnode *x;
+		x = statement();
+		if (x) {
+			llist_pushback(&res->st, x);
+		}
+
+		if (Token.type == T_EOF) {
+			break;
+		}
+	}
+	match(T_RB);
+	skip_semi = 1;
+	return ((struct ASTnode*)res);
+}
+
 // parse an expression
 static struct ASTnode* expression(void) {
-	return binexpr(0);
+	if (Token.type == T_LB) {
+		return (parse_block());
+	}
+	return (binexpr(0));
 }
 
 // parse one print statement
 static struct ASTnode* print_statement(void) {
 	match(T_PRINT);
 	struct ASTnode *res = ast_make_unary(A_PRINT, expression());
-	return res;
+	match(T_SEMI);
+	return (res);
 }
 
 // parse variable declaration statement
-static void var_declaration(void) {
+static struct ASTnode* var_declaration(void) {
 	match(T_INT);
 	check(T_INDENT);
 	if (findglob(Text) != -1) {
@@ -143,52 +207,47 @@ static void var_declaration(void) {
 	}
 	addglob(Text);
 	next();
+	match(T_SEMI);
+	return (NULL);
 }
 
-// parse value assignment statement
-static struct ASTnode* assign_statement(void) {
-	check(T_INDENT);
-
-	int left = findglob(Text);
-	if (left == -1) {
-		fprintf(stderr, "syntax error on line %d: unknown indentifier %s.\n", Line, Text);
-		exit(1);
+// parse an if statement
+static struct ASTnode* if_statement(void) {
+	match(T_IF); // if
+	match(T_LP); // (
+	struct ASTnode* cond = expression();
+	match(T_RP); // )
+	struct ASTnode* then = statement();
+	struct ASTnode* else_then;
+	if (Token.type == T_ELSE) {
+		next(); // else
+		else_then = statement();
+	} else {
+		else_then = ast_make_block(); // empty block
 	}
-
-	next();
-	match(T_ASSIGN);
-	return ast_make_assign(A_ASSIGN, left, expression());
+	return (ast_make_if(then, else_then, cond));
 }
 
-// parse one or multiple statements
-static struct ASTnode* statements(void) {
-	struct ASTblocknode *res = (struct ASTblocknode*)ast_make_block();
-	while (1) {
-		struct ASTnode *s = NULL;
-		if (Token.type == T_PRINT) {
-			s = print_statement();
-		} else if (Token.type == T_INT) {
-			var_declaration();
-		} else if (Token.type == T_INDENT) {
-			s = assign_statement();
-		} else {
-			fprintf(stderr, "syntax error on line %d: statement expected.\n", Line);
-			exit(1);
-		}
-
+// parse one statement
+static struct ASTnode* statement(void) {
+	if (Token.type == T_SEMI) {
+		return ast_make_intlit(1);
+	} else if (Token.type == T_PRINT) {
+		return (print_statement());
+	} else if (Token.type == T_INT) {
+		return (var_declaration());
+	} else if (Token.type == T_IF) {
+		return (if_statement());
+	} else {
+		skip_semi = 0;
+		struct ASTnode *res = expression();
 		match(T_SEMI);
-		if (s) {
-			llist_pushback(&res->st, s);
-		}
-
-		if (Token.type == T_EOF) {
-			return ((struct ASTnode*)res);
-		}
+		return (res);
 	}
 }
 
 // Parse ans return the full ast
 struct ASTnode* parse(void) {
 	next();
-	return (statements());
+	return (statement());
 }

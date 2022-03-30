@@ -3,16 +3,24 @@
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
-#include "defs.h"
+#include "token.h"
+#include "util/misc.h"
 
 int Preview;
 int Line = 1;
 FILE *Infile;
 char *Text;
 
-const char *token_typename[] = { "EOF", ";", "=", "+", "-", "*", "/",
+const char *token_typename[] = {
+	"EOF",
+	";",
+	"{", "}", "(", ")",
+	"=",
+	"+", "-", "*", "/",
 	"==", "!=", "<", ">", "<=", ">=",
-	"print", "int", "integer literal", "indentifier" };
+	"print", "int", "if", "else",
+	"an integer literal", "an indentifier"
+};
 
 // open input file
 void open_inputfile(char *filename) {
@@ -106,14 +114,52 @@ static char* scan_indentifier(int *n) {
 
 // Given a word from the input, scan if it is a keyword
 static int scan_keyword(struct token *t, char *s) {
-	if (s[0] == 'p') {
-		if (!strcmp(s, "print")) { //equal
-			t->type = T_PRINT;
+	static const char *map_s[] = {
+		"print",
+		"int",
+		"if",
+		"else",
+		NULL
+	};
+
+	static const int map_t[] = {
+		T_PRINT,
+		T_INT,
+		T_IF,
+		T_ELSE,
+		-1
+	};
+
+	for (int i = 0; map_s[i] != NULL; ++i) {
+		if (strequal(map_s[i], s)) {
+			t->type = map_t[i];
 			return (1);
 		}
-	} else if (s[0] == 'i') {
-		if (!strcmp(s, "int")) {
-			t->type = T_INT;
+	}
+	return (0);
+}
+
+// Scan one char token
+// Return 1 if found
+static int scan_1c(struct token *t) {
+	static const int map[][2] = {
+		{'+', T_PLUS},
+		{'-', T_MINUS},
+		{'*', T_STAR},
+		{'/', T_SLASH},
+		{'{', T_LB},
+		{'}', T_RB},
+		{'(', T_LP},
+		{')', T_RP},
+		{';', T_SEMI},
+		{'\0', -1}
+	};
+
+	int c = preview();
+	for (int i = 0; map[i][0] != '\0'; ++i) {
+		if (map[i][0] == c) {
+			t->type = map[i][1];
+			next();
 			return (1);
 		}
 	}
@@ -129,22 +175,11 @@ void scan(struct token *t) {
 		return;
 	}
 
-	if (c == '+') {
-		t->type = T_PLUS;
-		next();
-	} else if (c == '-') {
-		t->type = T_MINUS;
-		next();
-	} else if (c == '*') {
-		t->type = T_STAR;
-		next();
-	} else if (c == '/') {
-		t->type = T_SLASH;
-		next();
-	} else if (c == ';') {
-		t->type = T_SEMI;
-		next();
-	} else if (c == '=') {
+	if (scan_1c(t)) {
+		return;
+	}
+
+	if (c == '=') {
 		t->type = T_ASSIGN;
 		next();
 		c = preview();
