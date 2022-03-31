@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "cg.h"
 #include "symbol.h"
+#include "fatals.h"
 #include "util/array.h"
 
 static const char *ast_opname[] = {
@@ -40,8 +41,7 @@ static void cgenerate_dfs(struct ASTnode *x) {
 			cgprint_tabs();
 			fprintf(Outfile, "--->VAR @%s.\n", (char*)array_get(&Gsym, t->id));
 		} else {
-			fprintf(stderr, "Unknown AST operator %d.\n", x->op);
-			exit(1);
+			fail_ast_op(x->op, __FUNCTION__);
 		}
 	} else if (nt == N_ASSIGN) {
 		struct ASTassignnode *t = (struct ASTassignnode*)x;
@@ -86,8 +86,7 @@ static void cgenerate_dfs(struct ASTnode *x) {
 			cgenerate_dfs(t->c);
 			tabs -= 1;
 		} else {
-			fprintf(stderr, "Unknown AST operator %d.\n", x->op);
-			exit(1);
+			fail_ast_op(x->op, __FUNCTION__);
 		}
 	} else if (nt == N_MULTI) {
 		struct ASTblocknode *t = (struct ASTblocknode*)x;

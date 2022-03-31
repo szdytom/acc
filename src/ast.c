@@ -1,15 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "ast.h"
+#include "fatals.h"
 #include "util/linklist.h"
 
 // Build and return a binary AST node
 struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *right) {
 	struct ASTbinnode *x = malloc(sizeof(struct ASTbinnode));
 	if (x == NULL) {
-		// malloc failure
-		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
-		exit(1);
+		fail_malloc(__FUNCTION__);
 	}
 
 	x->op = op;
@@ -22,8 +21,7 @@ struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *ri
 struct ASTnode* ast_make_intlit(int val) {
 	struct ASTintnode *x = malloc(sizeof(struct ASTintnode));
 	if (x == NULL) {
-		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
-		exit(1);
+		fail_malloc(__FUNCTION__);
 	}
 
 	x->op = A_INTLIT;
@@ -35,8 +33,7 @@ struct ASTnode* ast_make_intlit(int val) {
 struct ASTnode* ast_make_var(int id) {
 	struct ASTvarnode *x = malloc(sizeof(struct ASTvarnode));
 	if (x == NULL) {
-		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
-		exit(1);
+		fail_malloc(__FUNCTION__);
 	}
 
 	x->op = A_VAR;
@@ -48,8 +45,7 @@ struct ASTnode* ast_make_var(int id) {
 struct ASTnode* ast_make_unary(int op, struct ASTnode *c) {
 	struct ASTunnode *x = malloc(sizeof(struct ASTunnode));
 	if (x == NULL) {
-		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
-		exit(1);
+		fail_malloc(__FUNCTION__);
 	}
 
 	x->op = op;
@@ -61,8 +57,7 @@ struct ASTnode* ast_make_unary(int op, struct ASTnode *c) {
 struct ASTnode* ast_make_block() {
 	struct ASTblocknode *x = malloc(sizeof(struct ASTblocknode));
 	if (x == NULL) {
-		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
-		exit(1);
+		fail_malloc(__FUNCTION__);
 	}
 
 	x->op = A_BLOCK;
@@ -74,8 +69,7 @@ struct ASTnode* ast_make_block() {
 struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
 	struct ASTassignnode *x = malloc(sizeof(struct ASTassignnode));
 	if (x == NULL) {
-		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
-		exit(1);
+		fail_malloc(__FUNCTION__);
 	}
 
 	x->op = op;
@@ -88,8 +82,7 @@ struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
 struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond) {
 	struct ASTifnode *x = malloc(sizeof(struct ASTifnode));
 	if (x == NULL) {
-		fprintf(stderr, "Unable to malloc in %s.\n", __FUNCTION__);
-		exit(1);
+		fail_malloc(__FUNCTION__);
 	}
 
 	x->op = A_IF;

@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 #include "token.h"
+#include "fatals.h"
 #include "util/misc.h"
 
 int Preview;
@@ -233,8 +234,7 @@ void scan(struct token *t) {
 				t->type = T_INDENT;
 			}
 		} else {
-			fprintf(stderr, "Unrecognised character %c on line %d.\n", c, Line);
-			exit(1);
+			fail_char(c);
 		}
 	}
 }

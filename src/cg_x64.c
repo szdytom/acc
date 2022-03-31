@@ -4,6 +4,7 @@
 #include "cg.h"
 #include "ast.h"
 #include "symbol.h"
+#include "fatals.h"
 #include "util/array.h"
 #include "util/linklist.h"
 
@@ -73,7 +74,6 @@ static void cgpreamble(void) {
 		"\tret\n"
 		"\n"
 		"\t.globl\tmain\n"
-		"\t.type\tmain, @function\n"
 		"main:\n"
 		"\tpushq\t%rbp\n"
 		"\tmovq	%rsp, %rbp\n", Outfile);
@@ -209,8 +209,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			struct ASTvarnode *x = (struct ASTvarnode*)rt;
 			return (cgload_glob(array_get(&Gsym, x->id)));
 		} else {
-			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-			exit(1);
+			fail_ast_op(rt->op, __FUNCTION__);
 		}
 	} else if (nt == N_BIN) {
 		if (rt->op == A_IF) {
@@ -232,7 +231,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			struct ASTbinnode *x = (struct ASTbinnode*)rt;
 			int Lstart = alloc_label();
 			int Lend = alloc_label();
-			
+
 			cgprint_label(Lstart);
 			int condv = cgenerate_ast(x->left);
 			cgjmp_condfalse(Lend, condv);
@@ -259,8 +258,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			// a compare operator
 			return (cgcompare(lv, rv, rt->op));
 		} else {
-			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-			exit(1);
+			fail_ast_op(rt->op, __FUNCTION__);
 		}
 	} else if (nt == N_UN) {
 		struct ASTunnode *x = (struct ASTunnode*)rt;
@@ -270,8 +268,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			cgprint(cv);
 			return (-1);
 		} else {
-			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-			exit(1);
+			fail_ast_op(rt->op, __FUNCTION__);
 		}
 	} else if (nt == N_ASSIGN) {
 		struct ASTassignnode *x = (struct ASTassignnode*)rt;
@@ -280,8 +277,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		if (rt->op == A_ASSIGN) {
 			return (cgstore_glob(cv, array_get(&Gsym, x->left)));
 		} else {
-			fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-			exit(1);
+			fail_ast_op(rt->op, __FUNCTION__);
 		}
 	} else if (nt == N_MULTI) {
 		struct ASTblocknode *x = (struct ASTblocknode*)rt;
@@ -296,8 +292,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		}
 		return val;
 	} else {
-		fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-		exit(1);
+		fail_ast_op(rt->op, __FUNCTION__);
 	}
 }
 

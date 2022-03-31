@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "cg.h"
 #include "symbol.h"
+#include "fatals.h"
 #include "util/array.h"
 #include "util/linklist.h"
 
@@ -19,14 +20,14 @@ static int alloc_label(void) {
 // Print out the ir preamble
 static void cgpreamble(void) {
 	fputs(	"@.printint.format = constant [4 x i8] c\"%d\\0A\\00\", align 1\n"
-		"declare i32 @printf(i8* readonly nocapture, ...)\n"
-		"define void @printint(i32 %0) {\n"
+		"declare dso_local i32 @printf(i8* readonly nocapture, ...)\n"
+		"define dso_local void @printint(i32 %0) {\n"
 		"\t%2 = getelementptr inbounds [4 x i8], [4 x i8]* @.printint.format, i32 0, i32 0\n"
 		"\t%3 = call i32 (i8*, ...) @printf(i8* %2, i32 %0)\n"
 		"\tret void\n"
 		"}\n"
 		"\n"
-		"define i32 @main() {\n"
+		"define dso_local i32 @main() {\n"
 		"entry:\n", Outfile);
 }
 
@@ -37,7 +38,7 @@ static void cgpostamble(void) {
 
 // init as global value
 static void cginit_glob(char *name) {
-	fprintf(Outfile, "@%s = global i32 0, align 4\n", name);
+	fprintf(Outfile, "@%s = dso_local global i32 0, align 4\n", name);
 }
 
 // Preform arithmetic operation between two i32
@@ -113,8 +114,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		} else if (rt->op == A_VAR) {
 			return (cgload_glob_i32(array_get(&Gsym, ((struct ASTvarnode*)rt)->id)));
 		}
-		fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-		exit(1);
+		fail_ast_op(rt->op, __FUNCTION__);
 	} else if (nt == N_BIN) {
 		if (rt->op == A_IF) {
 			struct ASTifnode *x = (struct ASTifnode*)rt;
@@ -174,8 +174,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		} else if (rt->op == A_LE) {
 			return (cgcomp_i32(lc, rc, "sle"));
 		}
-		fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-		exit(1);
+		fail_ast_op(rt->op, __FUNCTION__);
 	} else if (nt == N_UN) {
 		struct ASTunnode *x = (struct ASTunnode*)rt;
 		int cv = cgenerate_ast(x->c);
@@ -184,8 +183,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 			cgprint(cv);
 			return (-1);
 		}
-		fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-		exit(1);
+		fail_ast_op(rt->op, __FUNCTION__);
 	} else if (nt == N_ASSIGN) {
 		struct ASTassignnode *x = (struct ASTassignnode*)rt;
 		int cv = cgenerate_ast(x->right);
@@ -193,8 +191,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		if (rt->op == A_ASSIGN) {
 			return (cgstore_glob_i32(cv, array_get(&Gsym, x->left)));
 		}
-		fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-		exit(1);
+		fail_ast_op(rt->op, __FUNCTION__);
 	} else if (nt == N_MULTI) {
 		struct ASTblocknode *x = (struct ASTblocknode*)rt;
 		int val = -1;
@@ -205,8 +202,7 @@ static int cgenerate_ast(struct ASTnode *rt) {
 		}
 		return val;
 	}
-	fprintf(stderr, "Unknown AST operator %d.\n", rt->op);
-	exit(1);
+	fail_ast_op(rt->op, __FUNCTION__);
 }
 
 // generate and write ir to Outfile

@@ -4,6 +4,7 @@
 #include "token.h"
 #include "ast.h"
 #include "symbol.h"
+#include "fatals.h"
 
 static struct token Token;	// current token for parsing
 static int skip_semi = 0;	// can skip statement semi (after block)
@@ -23,8 +24,7 @@ static int op_precedence(int t) {
 		case T_STAR: case T_SLASH:
 			return (90);
 		default:
-			fprintf(stderr, "syntax error on line %d: expected an operator, got %s.\n", Line, token_typename[t]);
-			exit(1);
+			fail_ce_expect("an operator", token_typename[t]);
 	}
 }
 
@@ -50,8 +50,7 @@ static int arithop(int t) {
 			return map[i][1];
 		}
 	}
-	fprintf(stderr, "syntax error on line %d: expected an operator, got %s.\n", Line, token_typename[t]);
-	exit(1);
+	fail_ce_expect("an binary operator", token_typename[t]);
 }
 
 // operator ssociativity direction
@@ -78,18 +77,14 @@ static void match(int t) {
 	} else if (Token.type == t) {
 		next();
 	} else {
-		fprintf(stderr, "syntax error on line %d: %s excpected, got %s.\n"
-				, Line, token_typename[t], token_typename[Token.type]);
-		exit(1);
+		fail_ce_expect(token_typename[Token.type], token_typename[t]);
 	}
 }
 
 // check current token's type or report syntax error.
 static void check(int t) {
 	if (Token.type != t) {
-		fprintf(stderr, "syntax error on line %d: %s excpected, got %s.\n"
-				, Line, token_typename[t], token_typename[Token.type]);
-		exit(1);
+		fail_ce_expect(token_typename[Token.type], token_typename[t]);
 	}
 }
 
@@ -204,8 +199,7 @@ static struct ASTnode* var_declaration(void) {
 	match(T_INT);
 	check(T_INDENT);
 	if (findglob(Text) != -1) {
-		fprintf(stderr, "syntax error on line %d: variable redeclaration.\n", Line);
-		exit(1);
+		fail_ce("variable declared twice.");
 	}
 	addglob(Text);
 	next();
