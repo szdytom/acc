@@ -25,6 +25,6 @@ do if [ ! -f "out.$i" ]
        echo
      else echo ": OK"
      fi
-     rm -f out out.s "trial.$i"
+     rm -f out out.ll "trial.$i"
    fi
 done

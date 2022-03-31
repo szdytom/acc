@@ -18,7 +18,7 @@ const char *token_typename[] = {
 	"=",
 	"+", "-", "*", "/",
 	"==", "!=", "<", ">", "<=", ">=",
-	"print", "int", "if", "else", "while",
+	"print", "int", "if", "else", "while", "for",
 	"an integer literal", "an indentifier"
 };
 
@@ -120,6 +120,7 @@ static int scan_keyword(struct token *t, char *s) {
 		"if",
 		"else",
 		"while",
+		"for",
 		NULL
 	};
 
@@ -129,6 +130,7 @@ static int scan_keyword(struct token *t, char *s) {
 		T_IF,
 		T_ELSE,
 		T_WHILE,
+		T_FOR,
 		-1
 	};
 

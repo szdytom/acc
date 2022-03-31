@@ -162,15 +162,17 @@ static struct ASTnode* binexpr(int precedence) {
 
 // parse one block of code, e.g. { a; b; }
 static struct ASTnode* parse_block(void) {
-	struct ASTblocknode* res = (struct ASTblocknode*)ast_make_block();
-
 	match(T_LB);
+	if (Token.type == T_RB) {
+		next();
+		return NULL;
+	}
+
+	struct ASTblocknode* res = (struct ASTblocknode*)ast_make_block();
 	while (Token.type != T_RB) {
 		struct ASTnode *x;
 		x = statement();
-		if (x) {
-			llist_pushback(&res->st, x);
-		}
+		llist_pushback_notnull(&res->st, x);
 
 		if (Token.type == T_EOF) {
 			break;
@@ -223,7 +225,7 @@ static struct ASTnode* if_statement(void) {
 		next(); // else
 		else_then = statement();
 	} else {
-		else_then = ast_make_block(); // empty block
+		else_then = NULL; // empty block
 	}
 	return (ast_make_if(then, else_then, cond));
 }
@@ -238,10 +240,50 @@ static struct ASTnode* while_statement(void) {
 	return (ast_make_binary(A_WHILE, cond, body));
 }
 
+// parse a for statement (into a while loop)
+static struct ASTnode* for_statement(void) {
+	match(T_FOR);
+	match(T_LP);
+	struct ASTnode *init = statement();
+
+	struct ASTnode *cond;
+	if (Token.type != T_SEMI) {
+		cond = expression();
+	} else {
+		cond = ast_make_intlit(1);
+	}
+	next(); // skip the ;
+
+	struct ASTnode *inc;
+	if (Token.type != T_RP) {
+		inc = expression();
+	} else {
+		inc = NULL;
+	}
+
+	match(T_RP);
+	struct ASTnode *body = statement();
+	struct ASTblocknode *container = (struct ASTblocknode*)ast_make_block();
+	struct ASTnode *wbody;
+
+	if (body == NULL && inc == NULL) {
+		wbody = NULL;
+	} else {
+		struct ASTblocknode* wt = (struct ASTblocknode*)ast_make_block();
+		llist_pushback_notnull(&wt->st, body);
+		llist_pushback_notnull(&wt->st, inc);
+		wbody = (struct ASTnode*)wt;
+	}
+
+	llist_pushback_notnull(&container->st, init);
+	llist_pushback(&container->st, ast_make_binary(A_WHILE, cond, wbody));
+	return (struct ASTnode*)container;
+}
+
 // parse one statement
 static struct ASTnode* statement(void) {
 	if (Token.type == T_SEMI) {
-		return ast_make_intlit(1);
+		return (NULL);
 	} else if (Token.type == T_PRINT) {
 		return (print_statement());
 	} else if (Token.type == T_INT) {
@@ -250,6 +292,8 @@ static struct ASTnode* statement(void) {
 		return (if_statement());
 	} else if (Token.type == T_WHILE) {
 		return (while_statement());
+	} else if (Token.type == T_FOR) {
+		return (for_statement());
 	} else {
 		skip_semi = 0;
 		struct ASTnode *res = expression();

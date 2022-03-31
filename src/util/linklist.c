@@ -19,6 +19,12 @@ void llist_pushback(struct linklist *l, void *val) {
 	l->tail = l->tail->nxt;
 }
 
+void llist_pushback_notnull(struct linklist *l, void *val) {
+	if (val) {
+		llist_pushback(l, val);
+	}
+}
+
 void* llist_get(struct linklist *l, int x) {
 	if (x >= l->length) {
 		fprintf(stderr, "linklist out of range.\n");

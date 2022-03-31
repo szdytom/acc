@@ -14,6 +14,7 @@ struct linklist {
 
 struct llist_node* llist_createnode(void *val);
 void llist_pushback(struct linklist *l, void *val);
+void llist_pushback_notnull(struct linklist *l, void *val);
 void* llist_get(struct linklist *l, int x);
 void llist_set(struct linklist *l, int x, void *val);
 void llist_init(struct linklist *l);
