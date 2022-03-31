@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 // check if two string are the same
 int strequal(const char *s1, const char *s2) {
@@ -12,5 +13,14 @@ int strequal(const char *s1, const char *s2) {
 		}
 	}
 	return (1);
+}
+
+// A impl of C23 strdup()
+char* strclone(char *s) {
+	int n = strlen(s);
+	char *res = malloc(n + 1);
+	memcpy(res, s, n * sizeof(char));
+	res[n] = '\0';
+	return res;
 }
 

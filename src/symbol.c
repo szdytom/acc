@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "util/misc.h"
 #include "util/array.h"
 
 #define INDENT_CHARS 63 // 10 digits + 26 * 2(cap) alpha + 1 _
@@ -112,8 +113,7 @@ int findglob(char *s) {
 // Add a global symbol to the symbol table.
 // Return the slot number in the symbol table.
 int addglob(char *s) {
-	int n = strlen(s);
-	char *ss = strdup(s);
+	char *ss = strclone(s);
 	array_pushback(&Gsym, ss);
 	int res = Gsym.length - 1;
 	trie_set(ss, res);

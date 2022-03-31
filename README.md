@@ -1,5 +1,5 @@
 # acc
-A zero-dependence (sub) C compiler working in progress written in pure ANSI C.
+A zero-dependence (sub) C compiler working in progress written in pure ISO C99.
 
 ## Build from source
 
