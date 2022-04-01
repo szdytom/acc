@@ -1,0 +1,9 @@
+#ifndef ACC_NORETURN_H
+
+#if @HAS_NORETURN_H@
+#include <stdnoreturn.h>
+#else
+#define noreturn _Noreturn
+#endif
+
+#endif

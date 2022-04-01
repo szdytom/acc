@@ -3,14 +3,16 @@ A zero-dependence (sub) C compiler working in progress written in pure ISO C.
 
 ## Build from source
 
-Make sure you have `gcc` and `make` on your PATH.
+Make sure you have `gcc` and `cmake` on your PATH.
 If you don't, here's command for ubuntu:
 ```
-sudo apt install build-essential
+sudo apt install build-essential cmake
 ```
 
 To build, run:
 ```
+cd build
+cmake ..
 make
 ```
 

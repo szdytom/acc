@@ -1,19 +1,24 @@
-
 # Executables
 acc
 a
 a.out
+a.exe
 
 # Output
 *.s
 *.ll
-out.txt
+/out.txt
 
 # C compile
 *.o
 
 # scripts
-automode.bash
+/automode.bash
 
 # Editors
 .vscode
+
+# CMake
+/build/*
+!/build/.gitkeep
+/config/*.h

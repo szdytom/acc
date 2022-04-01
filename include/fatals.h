@@ -1,7 +1,7 @@
 #ifndef ACC_FATALS_H
 #define ACC_FATALS_H
 
-#include <stdnoreturn.h>
+#include "noreturn.h"
 
 noreturn void fail_malloc(const char *func_name);
 noreturn void fail_ast_op(int op, const char *func_name);
