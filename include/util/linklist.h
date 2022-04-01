@@ -20,4 +20,6 @@ void llist_set(struct linklist *l, int x, void *val);
 void llist_init(struct linklist *l);
 void llist_free(struct linklist *l);
 void llist_insert(struct linklist *l, int x, void *val);
+void llist_popfront(struct linklist *l);
+
 #endif

@@ -2,7 +2,7 @@
 # Run each test and compare
 # against known good output
 
-# set -e
+set -e
 
 echo "Testing for target x86_64..."
 

@@ -4,12 +4,6 @@
 #include "token.h"
 
 extern int Line;
-extern int Preview;
-extern FILE *Infile;
-extern char *Text;
-
-void scan(struct token *t);
-void open_inputfile(char *filename);
-void scan_unload(void);
+struct linklist scan_tokens(const char *name);
 
 #endif

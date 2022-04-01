@@ -14,3 +14,6 @@ out.txt
 
 # scripts
 automode.bash
+
+# Editors
+.vscode

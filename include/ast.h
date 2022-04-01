@@ -78,7 +78,7 @@ struct ASTnode* ast_make_var(int id);
 struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right);
 struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond);
 int ast_type(int t);
-void free_ast(struct ASTnode *x);
+void ast_free(struct ASTnode *x);
 
 #endif
 

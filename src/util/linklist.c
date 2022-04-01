@@ -1,9 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "fatals.h"
 #include "util/linklist.h"
 
 struct llist_node* llist_createnode(void *val) {
 	struct llist_node *res = malloc(sizeof(struct llist_node));
+	if (res == NULL) {
+		fail_malloc(__FUNCTION__);
+	}
 	res->nxt = NULL;
 	res->val = val;
 	return (res);
@@ -76,13 +80,13 @@ void llist_insert(struct linklist *l, int index, void *val) {
 
 	l->length += 1;
 	struct llist_node *x = llist_createnode(val);
-	if (x == 0) {
+	if (index == 0) {
 		x->nxt = l->head;
 		l->head = x;
 		return;
 	}
 
-	struct llist_node *p;
+	struct llist_node *p = l->head;
 	for (int i = 0; i < index - 1; ++i) {
 		p = p->nxt;
 	}
@@ -90,3 +94,18 @@ void llist_insert(struct linklist *l, int index, void *val) {
 	p->nxt = x;
 }
 
+void llist_popfront(struct linklist *l) {
+	if (l->head == NULL) {
+		return;
+	}
+
+	l->length -= 1;
+	if (l->length == 0) {
+		free(l->head);
+		l->head = l->tail = NULL;
+	}
+
+	struct llist_node *p = l->head;
+	l->head = p->nxt;
+	free(p);
+}

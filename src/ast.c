@@ -114,7 +114,7 @@ int ast_type(int t) {
 }
 
 // free an AST's memory
-void free_ast(struct ASTnode *x) {
+void ast_free(struct ASTnode *x) {
 	if (x == NULL) {
 		return;
 	}
@@ -122,22 +122,22 @@ void free_ast(struct ASTnode *x) {
 	int nt = ast_type(x->op);
 	if (nt == N_ASSIGN) {
 		struct ASTassignnode *t = (struct ASTassignnode*)x;
-		free_ast(t->right);
+		ast_free(t->right);
 	} else if (nt == N_BIN) {
 		struct ASTbinnode *t = (struct ASTbinnode*)x;
-		free_ast(t->left);
-		free_ast(t->right);
+		ast_free(t->left);
+		ast_free(t->right);
 		if (x->op == A_IF) {
-			free_ast(((struct ASTifnode*)x)->cond);
+			ast_free(((struct ASTifnode*)x)->cond);
 		}
 	} else if (nt == N_UN) {
 		struct ASTunnode *t = (struct ASTunnode*)x;
-		free_ast(t->c);
+		ast_free(t->c);
 	} else if (nt == N_MULTI) {
 		struct ASTblocknode *t = (struct ASTblocknode*)x;
 		struct llist_node *p = t->st.head;
 		while (p) {
-			free_ast(p->val);
+			ast_free(p->val);
 			p = p->nxt;
 		}
 		llist_free(&t->st);

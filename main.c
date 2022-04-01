@@ -15,7 +15,6 @@ static void usage(char *prog) {
 
 //Do clean up job
 void unload(void) {
-	scan_unload();
 	cg_unload();
 	symbol_unload();
 }
@@ -50,13 +49,12 @@ int main(int argc, char *argv[]) {
 		}
 	} else {
 		fprintf(stderr, "Unknow target %s.\n", argv[1]);
+		exit(1);
 	}
 
-	open_inputfile(argv[2]);
-
 	symbol_init();
-	struct ASTnode *rt = parse();
+	struct ASTnode *rt = parse(argv[2]);
 	cg_main(target, rt);
-	free_ast(rt);
+	ast_free(rt);
 	return (0);
 }

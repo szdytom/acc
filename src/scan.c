@@ -1,16 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include "token.h"
 #include "fatals.h"
 #include "util/misc.h"
 
-int Preview;
 int Line = 1;
-FILE *Infile;
-char *Text;
+static int Preview;
+static FILE *Infile;
 
 const char *token_typename[] = {
 	"EOF",
@@ -19,28 +18,10 @@ const char *token_typename[] = {
 	"=",
 	"+", "-", "*", "/",
 	"==", "!=", "<", ">", "<=", ">=",
-	"print", "int", "if", "else", "while", "for",
-	"an integer literal", "an indentifier"
+	"int", "void", "char", "long",
+	"print", "if", "else", "while", "for",
+	"an integer literal (type int)", "an integer literal (type long)", "an indentifier"
 };
-
-// open input file
-void open_inputfile(char *filename) {
-	Infile = fopen(filename, "r");
-	if (Infile == NULL) {
-		fprintf(stderr, "Unable to open %s: %s\n", filename, strerror(errno));
-		exit(1);
-	}
-}
-
-// close Infile and free vars
-void scan_unload(void) {
-	if (Infile) {
-		fclose(Infile);
-	}
-	if (Text) {
-		free(Text);
-	}
-}
 
 // preview one char, not getting it out from the stream
 static int preview(void) {
@@ -72,16 +53,30 @@ static void skip_whitespaces(void) {
 }
 
 // Scan and return an integer literal value from the input file.
-static int scanint() {
-	int res = 0;
-
+static void scanint(struct token *t) {
+	long long res = 0;
 	int c = preview();
 	while ('0' <= c && c <= '9') {
 		res = res * 10 + (c - '0');
 		next();
 		c = preview();
 	}
-	return (res);
+
+	if (INT_MIN <= res && res <= INT_MAX) {
+		t->type = T_INTLIT;
+		t->val = malloc(sizeof(int));
+		if (t->val == NULL) {
+			fail_malloc(__FUNCTION__);
+		}
+		*((int *)t->val) = (int)res;
+	} else {
+		t->type = T_LONGLIT;
+		t->val = malloc(sizeof(long long));
+		if (t->val == NULL) {
+			fail_malloc(__FUNCTION__);
+		}
+		*((long long *)t->val) = res;
+	}
 }
 
 // Scan an identifier from the input file and
@@ -118,6 +113,8 @@ static int scan_keyword(struct token *t, char *s) {
 	static const char *map_s[] = {
 		"print",
 		"int",
+		"void",
+		"long",
 		"if",
 		"else",
 		"while",
@@ -128,6 +125,8 @@ static int scan_keyword(struct token *t, char *s) {
 	static const int map_t[] = {
 		T_PRINT,
 		T_INT,
+		T_VOID,
+		T_LONG,
 		T_IF,
 		T_ELSE,
 		T_WHILE,
@@ -172,16 +171,22 @@ static int scan_1c(struct token *t) {
 }
 
 // Scan and return the next token found in the input.
-void scan(struct token *t) {
+static struct token* scan(void) {
+	struct token *t = malloc(sizeof(struct token));
+	if (t == NULL) {
+		fail_malloc(__FUNCTION__);
+	}
+	t->val = NULL;
+
 	skip_whitespaces();
 	int c = preview();
 	if (c == EOF) {
 		t->type = T_EOF;
-		return;
+		return (t);
 	}
 
 	if (scan_1c(t)) {
-		return;
+		return (t);
 	}
 
 	if (c == '=') {
@@ -219,17 +224,16 @@ void scan(struct token *t) {
 			next();
 		}
 	} else {
-		// If it's a digit, scan the literal integer value in
+		// If it's a digit, scan the integer literal value in
 		if (isdigit(c)) {
-			t->type = T_INTLIT;
-			t->intval = scanint();
+			scanint(t);
 		} else if (isalpha(c) || c == '_') {
-			if (Text) {
-				free(Text);
-			}
-
-			Text = scan_indentifier(NULL);
-			if (!scan_keyword(t, Text)) {
+			t->val = scan_indentifier(NULL);
+			if (scan_keyword(t, t->val)) {
+				// got a keyword
+				free(t->val);
+				t->val = NULL;
+			} else {
 				// not a keyword, so it should be an indentifier.
 				t->type = T_INDENT;
 			}
@@ -237,5 +241,26 @@ void scan(struct token *t) {
 			fail_char(c);
 		}
 	}
+	return (t);
 }
 
+struct linklist scan_tokens(const char *name) {
+	Infile = fopen(name, "r");
+	if (Infile == NULL) {
+		fprintf(stderr, "Cannot open file %s.\n", name);
+		exit(1);
+	}
+
+	struct linklist res;
+	llist_init(&res);
+	while (1) {
+		struct token *t = scan();
+		llist_pushback(&res, t);
+		if (t->type == T_EOF) {
+			break;
+		}
+	}
+
+	fclose(Infile);
+	return (res);
+}

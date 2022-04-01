@@ -90,7 +90,7 @@ static void cgpostamble(void) {
 // Return the id of the register
 static int cgload_int(int val) {
 	int r = alloc_reg();
-	fprintf(Outfile, "\tmovl\t$%d, %s\n", val, reglist[r]);
+	fprintf(Outfile, "\tmovl\t$%d, %sd\n", val, reglist[r]);
 	return (r);
 }
 
