@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include "scan.h"
 #include "token.h"
 #include "ast.h"
@@ -42,10 +44,10 @@ static int arithop(int t) {
 		{T_GT,		A_GT},
 		{T_GE,		A_GE},
 		{T_ASSIGN,	A_ASSIGN},
-		{T_EOF}
+		{-1}
 	};
 
-	for (int i = 0; map[i][0] != T_EOF; ++i) {
+	for (int i = 0; map[i][0] != -1; ++i) {
 		if (t == map[i][0]) {
 			return map[i][1];
 		}
@@ -54,22 +56,21 @@ static int arithop(int t) {
 }
 
 // operator ssociativity direction
-// Return	0 if left to right, e.g. +
-// 		1 if right to left, e.g. =
-static int direction_rtl(int t) {
+// Returns	false if left to right, e.g. +
+// 			true if right to left, e.g. =
+static bool direction_rtl(int t) {
 	switch(t) {
 		case T_ASSIGN:
-			return (1);
+			return (true);
 		default:
-			return (0);
+			return (false);
 	}
 }
 
 // Next token
 static void next(void) {
 	if (Tokens.head) {
-		token_free(Tokens.head->val);
-		llist_popfront(&Tokens);
+		token_free(llist_popfront(&Tokens));
 	}
 }
 
@@ -78,7 +79,8 @@ static struct token preview(int k) {
 	if (Tokens.length <= k) {
 		return (token_make_eof());
 	}
-	return (*((struct token*)llist_get(&Tokens, k)));
+	struct token* res = llist_get(&Tokens, k);
+	return (*res);
 }
 
 // return current token from input stream
@@ -117,12 +119,12 @@ static struct ASTnode* primary(void) {
 		next();
 		res = expression();
 		match(T_RP);
-	} else if (current().type == T_INTLIT) {
-		res = ast_make_intlit(*((int*)current().val));
+	} else if (current().type == T_I32_LIT) {
+		res = ast_make_intlit(*(int32_t*)current().val);
 		next();
-	} else if (current().type == T_LONGLIT) {
+	} else if (current().type == T_I64_LIT) {
 		// todo
-		fprintf(stderr, "TOOD.\n");
+		fprintf(stderr, "TOOD: T_I64_LIT.\n");
 		exit(1);
 	} else if (current().type == T_INDENT) {
 		int id = findglob((char*)current().val);
@@ -296,29 +298,24 @@ static struct ASTnode* for_statement(void) {
 
 // parse one statement
 static struct ASTnode* statement(void) {
-	if (current().type == T_SEMI) {
-		return (NULL);
-	}
-	else if (current().type == T_PRINT) {
-		return (print_statement());
-	}
-	else if (current().type == T_INT) {
-		return (var_declaration());
-	}
-	else if (current().type == T_IF) {
-		return (if_statement());
-	}
-	else if (current().type == T_WHILE) {
-		return (while_statement());
-	}
-	else if (current().type == T_FOR) {
-		return (for_statement());
-	}
-	else {
-		skip_semi = 0;
-		struct ASTnode* res = expression();
-		match(T_SEMI);
-		return (res);
+	switch (current().type) {
+		case T_SEMI:
+			return (NULL);
+		case T_PRINT:
+			return (print_statement());
+		case T_INT:
+			return (var_declaration());
+		case T_IF:
+			return (if_statement());
+		case T_WHILE:
+			return (while_statement());
+		case T_FOR:
+			return (for_statement());
+		default:
+			skip_semi = 0;
+			struct ASTnode* res = expression();
+			match(T_SEMI);
+			return (res);
 	}
 }
 

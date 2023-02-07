@@ -13,13 +13,19 @@ struct linklist {
 };
 
 struct llist_node* llist_createnode(void *val);
-void llist_pushback(struct linklist *l, void *val);
-void llist_pushback_notnull(struct linklist *l, void *val);
-void* llist_get(struct linklist *l, int x);
-void llist_set(struct linklist *l, int x, void *val);
+
 void llist_init(struct linklist *l);
 void llist_free(struct linklist *l);
+void llist_free_full(struct linklist *l);
+
+void llist_pushback(struct linklist *l, void *val);
+void llist_pushback_notnull(struct linklist *l, void *val);
+
+void* llist_get(struct linklist *l, int x);
+void llist_set(struct linklist *l, int x, void *val);
+
 void llist_insert(struct linklist *l, int x, void *val);
-void llist_popfront(struct linklist *l);
+void* llist_popfront(struct linklist *l);
+void* llist_remove(struct linklist *l, int index);
 
 #endif

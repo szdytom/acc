@@ -8,6 +8,9 @@
 *.obj
 *.elf
 
+# Debugger
+*.pdb
+
 # Linker output
 *.ilk
 *.map

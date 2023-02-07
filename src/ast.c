@@ -6,10 +6,7 @@
 
 // Build and return a binary AST node
 struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *right) {
-	struct ASTbinnode *x = malloc(sizeof(struct ASTbinnode));
-	if (x == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct ASTbinnode *x = malloc_or_fail(sizeof(struct ASTbinnode), __FUNCTION__);
 
 	x->op = op;
 	x->left = left;
@@ -19,10 +16,7 @@ struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *ri
 
 // Make an AST int literal node
 struct ASTnode* ast_make_intlit(int val) {
-	struct ASTintnode *x = malloc(sizeof(struct ASTintnode));
-	if (x == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct ASTintnode *x = malloc_or_fail(sizeof(struct ASTintnode), __FUNCTION__);
 
 	x->op = A_INTLIT;
 	x->val = val;
@@ -31,10 +25,7 @@ struct ASTnode* ast_make_intlit(int val) {
 
 // Make an AST variable value node
 struct ASTnode* ast_make_var(int id) {
-	struct ASTvarnode *x = malloc(sizeof(struct ASTvarnode));
-	if (x == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct ASTvarnode *x = malloc_or_fail(sizeof(struct ASTvarnode), __FUNCTION__);
 
 	x->op = A_VAR;
 	x->id = id;
@@ -43,10 +34,7 @@ struct ASTnode* ast_make_var(int id) {
 
 // Make a unary AST node: only one child
 struct ASTnode* ast_make_unary(int op, struct ASTnode *c) {
-	struct ASTunnode *x = malloc(sizeof(struct ASTunnode));
-	if (x == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct ASTunnode *x = malloc_or_fail(sizeof(struct ASTunnode), __FUNCTION__);
 
 	x->op = op;
 	x->c = c;
@@ -55,10 +43,7 @@ struct ASTnode* ast_make_unary(int op, struct ASTnode *c) {
 
 // Make a block ast node
 struct ASTnode* ast_make_block() {
-	struct ASTblocknode *x = malloc(sizeof(struct ASTblocknode));
-	if (x == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct ASTblocknode *x = malloc_or_fail(sizeof(struct ASTblocknode), __FUNCTION__);
 
 	x->op = A_BLOCK;
 	llist_init(&x->st);
@@ -67,10 +52,7 @@ struct ASTnode* ast_make_block() {
 
 // Make a assignment ast node
 struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
-	struct ASTassignnode *x = malloc(sizeof(struct ASTassignnode));
-	if (x == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct ASTassignnode *x = malloc_or_fail(sizeof(struct ASTassignnode), __FUNCTION__);
 
 	x->op = op;
 	x->left = left;
@@ -80,10 +62,7 @@ struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
 
 // Make a if statement ast node
 struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond) {
-	struct ASTifnode *x = malloc(sizeof(struct ASTifnode));
-	if (x == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct ASTifnode *x = malloc_or_fail(sizeof(struct ASTifnode), __FUNCTION__);
 
 	x->op = A_IF;
 	x->left = left;

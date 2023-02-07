@@ -19,9 +19,9 @@ enum {
 	T_EQ, T_NE, T_LT, T_GT, T_LE, T_GE,
 	T_INT, T_VOID, T_CHAR, T_LONG,
 	T_PRINT, T_IF, T_ELSE, T_WHILE, T_FOR,
-	T_INTLIT, T_LONGLIT, T_INDENT,
+	T_I32_LIT, T_I64_LIT, T_INDENT,
 };
-extern const char *token_typename[29];
+extern const char *token_typename[63];
 
 void token_free(struct token *t);
 struct token token_make_eof(void);

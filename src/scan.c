@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <limits.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include "token.h"
 #include "fatals.h"
 #include "util/misc.h"
@@ -10,18 +11,6 @@
 int Line = 1;
 static int Preview;
 static FILE *Infile;
-
-const char *token_typename[] = {
-	"EOF",
-	";",
-	"{", "}", "(", ")",
-	"=",
-	"+", "-", "*", "/",
-	"==", "!=", "<", ">", "<=", ">=",
-	"int", "void", "char", "long",
-	"print", "if", "else", "while", "for",
-	"an integer literal (type int)", "an integer literal (type long)", "an indentifier"
-};
 
 // preview one char, not getting it out from the stream
 static int preview(void) {
@@ -43,9 +32,7 @@ static void next(void) {
 // Skip past input that we don't need to deal with,
 // i.e. whitespace, newlines.
 static void skip_whitespaces(void) {
-	int c;
-
-	c = preview();
+	int c = preview();
 	while (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f') {
 		next();
 		c = preview();
@@ -53,7 +40,7 @@ static void skip_whitespaces(void) {
 }
 
 // Scan and return an integer literal value from the input file.
-static void scanint(struct token *t) {
+static void scan_int(struct token *t) {
 	long long res = 0;
 	int c = preview();
 	while ('0' <= c && c <= '9') {
@@ -62,40 +49,35 @@ static void scanint(struct token *t) {
 		c = preview();
 	}
 
-	if (INT_MIN <= res && res <= INT_MAX) {
-		t->type = T_INTLIT;
-		t->val = malloc(sizeof(int));
-		if (t->val == NULL) {
-			fail_malloc(__FUNCTION__);
-		}
-		*((int *)t->val) = (int)res;
+	if (INT32_MIN <= res && res <= INT32_MAX) {
+		t->type = T_I32_LIT;
+		t->val = malloc_or_fail(sizeof(int32_t), __FUNCTION__);
+		*((int32_t *)t->val) = (int)res;
 	} else {
-		t->type = T_LONGLIT;
-		t->val = malloc(sizeof(long long));
-		if (t->val == NULL) {
-			fail_malloc(__FUNCTION__);
-		}
-		*((long long *)t->val) = res;
+		t->type = T_I64_LIT;
+		t->val = malloc_or_fail(sizeof(int64_t), __FUNCTION__);
+		*((int64_t *)t->val) = res;
 	}
 }
 
 // Scan an identifier from the input file and
-// Return the identifier (char*)
+// Return the identifier string (char*)
+// Writes the length into _n_ or NULL
 static char* scan_indentifier(int *n) {
 	int sz = 128, len = 0;
 
-	char *res = malloc(sz * sizeof(char));
+	char *res = malloc_or_fail(sz * sizeof(char), __FUNCTION__);
 	memset(res, 0, sz * sizeof(char));
 
 	int c = preview();
 	while (isdigit(c) || isalpha(c) || c == '_') {
 		if (len >= sz - 1) {
 			sz *= 2;
-			char *old = res;
-			res = malloc(sz * sizeof(char));
-			memcpy(res, old, len * sizeof(char));
+			char *res = realloc(res, sz * sizeof(char));
+			if (res == NULL) {
+				fail_malloc(__FUNCTION__);
+			}
 			memset(res + len * sizeof(char), 0, (sz - len) * sizeof(char));
-			free(old);
 		}
 		res[len++] = c;
 		next();
@@ -108,8 +90,9 @@ static char* scan_indentifier(int *n) {
 	return (res);
 }
 
-// Given a word from the input, scan if it is a keyword
-static int scan_keyword(struct token *t, char *s) {
+// Given a word from the input, scan if it is a keyword.
+// Returns true if found keyword.
+static bool scan_keyword(struct token *t, char *s) {
 	static const char *map_s[] = {
 		"print",
 		"int",
@@ -137,15 +120,15 @@ static int scan_keyword(struct token *t, char *s) {
 	for (int i = 0; map_s[i] != NULL; ++i) {
 		if (strequal(map_s[i], s)) {
 			t->type = map_t[i];
-			return (1);
+			return (true);
 		}
 	}
-	return (0);
+	return (false);
 }
 
 // Scan one char token
 // Return 1 if found
-static int scan_1c(struct token *t) {
+static bool scan_1c(struct token *t) {
 	static const int map[][2] = {
 		{'+', T_PLUS},
 		{'-', T_MINUS},
@@ -164,18 +147,15 @@ static int scan_1c(struct token *t) {
 		if (map[i][0] == c) {
 			t->type = map[i][1];
 			next();
-			return (1);
+			return (true);
 		}
 	}
-	return (0);
+	return (false);
 }
 
 // Scan and return the next token found in the input.
 static struct token* scan(void) {
-	struct token *t = malloc(sizeof(struct token));
-	if (t == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
+	struct token *t = malloc_or_fail(sizeof(struct token), __FUNCTION__);
 	t->val = NULL;
 
 	skip_whitespaces();
@@ -204,8 +184,7 @@ static struct token* scan(void) {
 			t->type = T_NE;
 			next();
 		} else {
-			fprintf(stderr, "Unrecognised character %c on line %d.\n", c, Line);
-			exit(1);
+			fail_char(c);
 		}
 	} else if (c == '<') {
 		t->type = T_LT;
@@ -226,7 +205,7 @@ static struct token* scan(void) {
 	} else {
 		// If it's a digit, scan the integer literal value in
 		if (isdigit(c)) {
-			scanint(t);
+			scan_int(t);
 		} else if (isalpha(c) || c == '_') {
 			t->val = scan_indentifier(NULL);
 			if (scan_keyword(t, t->val)) {

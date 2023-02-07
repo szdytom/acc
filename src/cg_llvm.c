@@ -53,7 +53,7 @@ static int cgcomp_i(int x, int y, char *op, char *ty) {
 	int r1 = alloc_tag();
 	fprintf(Outfile, "\t%%%d = icmp %s %s %%%d, %%%d\n", r1, op, ty, x, y);
 	int r2 = alloc_tag();
-	if (ty[0] != 'i' || ty[1] != '1' || ty[2] != '\0') {
+	if (strcmp(ty, "i1") != 0) { // special case for bool
 		fprintf(Outfile, "\t%%%d = zext i1 %%%d to %s\n", r2, r1, ty);
 	}
 	return (r2);
