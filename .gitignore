@@ -1,6 +1,6 @@
-# ---> C
-# Prerequisites
-*.d
+# ASM files
+*.s
+*.ll
 
 # Object files
 *.o
@@ -23,7 +23,7 @@
 *.la
 *.lo
 
-# Shared objects (inc. Windows DLLs)
+# Shared objects
 *.dll
 *.so
 *.so.*
@@ -37,18 +37,10 @@
 *.x86_64
 *.hex
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+# editors
+.vscode/
+*.swp
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
+# builder
+.xmake/
+build/
