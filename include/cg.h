@@ -11,10 +11,10 @@ void open_outputfile(char *filename);
 void cg_unload(void);
 
 // cg_x64.c
-void cgx64_generate(struct ASTnode *rt);
+//void cgx64_generate(struct ASTnode *rt);
 
 // cg_llvm.c
-void cgllvm_generate(struct ASTnode *rt);
+//void cgllvm_generate(struct ASTnode *rt);
 
 // cg_ast.c
 void cgast_generate(struct ASTnode *rt);

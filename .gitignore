@@ -10,6 +10,7 @@
 
 # Debugger
 *.pdb
+out.txt
 
 # Linker output
 *.ilk

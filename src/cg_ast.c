@@ -32,10 +32,20 @@ static void cgenerate_dfs(struct ASTnode *x) {
 
 	int nt = ast_type(x->op);
 	if (nt == N_LEAF) {
-		if (x->op == A_INTLIT) {
-			struct ASTintnode *t = (struct ASTintnode*)x;
+		if (x->op == A_LIT) {
+			struct ASTlitnode *t = (struct ASTlitnode*)x;
 			cgprint_tabs();
-			fprintf(Outfile, "--->INT %d.\n", t->val);
+			switch (t->type.vt) {
+			case V_I32:
+				fprintf(Outfile, "--->INT %d.\n", *(int32_t*)t->val);
+				break;
+			case V_I64:
+				fprintf(Outfile, "--->INT64 %lld.\n", *(int64_t*)t->val);
+				break;
+			default:
+				fprintf(stderr, "%s: Unknow literal type %d.\n", __FUNCTION__, t->type.vt);
+				exit(1);
+			}
 		} else if (x->op == A_VAR) {
 			struct ASTvarnode *t = (struct ASTvarnode*)x;
 			cgprint_tabs();

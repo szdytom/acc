@@ -25,9 +25,9 @@ void cg_unload(void) {
 // generates code
 void cg_main(int target, struct ASTnode *rt) {
 	if (target == CG_X64) {
-		cgx64_generate(rt);
+		//cgx64_generate(rt);
 	} else if (target == CG_LLVM) {
-		cgllvm_generate(rt);
+		//cgllvm_generate(rt);
 	} else if (target == CG_AST) {
 		cgast_generate(rt);
 	} else {

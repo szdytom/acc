@@ -1,6 +1,7 @@
 #ifndef ACC_AST_H
 #define ACC_AST_H
 
+#include <stdint.h>
 #include "util/linklist.h"
 
 // AST operation types
@@ -8,10 +9,19 @@ enum {
 	A_ASSIGN,
 	A_ADD, A_SUB, A_MUL, A_DIV,
 	A_EQ, A_NE, A_LT, A_GT, A_LE, A_GE,
-	A_INTLIT, A_VAR,
+	A_LIT, A_VAR,
 	A_BLOCK,
 	A_PRINT, A_IF, A_WHILE,
 	A_SOUL // what?
+};
+
+// value type
+enum {
+	V_I32, V_I64, V_BOOL
+};
+
+struct value_type {
+	int vt; // base value type
 };
 
 // AST nodde types
@@ -51,10 +61,11 @@ struct ASTblocknode {
 	struct linklist st; // statements linklist
 };
 
-// AST int literal node
-struct ASTintnode {
+// AST literal node
+struct ASTlitnode {
 	int op;
-	int val;
+	struct value_type type;
+	void *val;
 };
 
 // AST assign literal node
@@ -71,7 +82,8 @@ struct ASTvarnode {
 };
 
 struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *right);
-struct ASTnode* ast_make_intlit(int val);
+struct ASTnode* ast_make_lit_i32(int32_t x);
+struct ASTnode* ast_make_lit_i64(int64_t x);
 struct ASTnode* ast_make_unary(int op, struct ASTnode *c);
 struct ASTnode* ast_make_block();
 struct ASTnode* ast_make_var(int id);

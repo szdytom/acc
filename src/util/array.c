@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "util/array.h"
+#include "fatals.h"
 
 void array_init(struct array *a) {
 	a->length = 0;
@@ -18,15 +19,16 @@ void array_free(struct array *a) {
 
 static void array_enlarge(struct array *a) {
 	if (a->cap == 0) {
-		a->cap = 128;
+		a->cap = 1;
+	} else if (a->cap <= 256) {
+		a->cap *= 8;
 	} else {
-		a->cap *= 2;
+		a->cap *= 1.7;
 	}
 
-	void **old = a->begin;
-	a->begin = malloc(sizeof(void*) * a->cap);
-	if (old) {
-		memcpy(a->begin, old, a->length * sizeof(void*));
+	a->begin = realloc(a->begin, a->cap);
+	if (a->begin == NULL) {
+		fail_malloc(__FUNCTION__);
 	}
 }
 
@@ -55,4 +57,13 @@ void array_set(struct array *a, int index, void *val) {
 	}
 
 	a->begin[index] = val;
+}
+
+void* array_popback(struct array *a) {
+	if (a->length == 0) {
+		return (NULL);
+	}
+
+	a->length -= 1;
+	return (a->begin[a->length]);
 }
