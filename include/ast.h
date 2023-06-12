@@ -9,41 +9,38 @@ enum {
 	A_ASSIGN,
 	A_ADD, A_SUB, A_MUL, A_DIV,
 	A_EQ, A_NE, A_LT, A_GT, A_LE, A_GE,
-	A_LIT, A_VAR,
+	A_LIT_I32, A_LIT_I64,
+	A_VAR,
 	A_BLOCK,
 	A_PRINT, A_IF, A_WHILE,
+	A_RETURN,
 	A_SOUL // what?
 };
 
-// value type
-enum {
-	V_I32, V_I64, V_BOOL
-};
+extern const char *ast_opname[31];
 
-struct value_type {
-	int vt; // base value type
-};
-
-// AST nodde types
-enum {
-	N_BIN, N_UN, N_MULTI, N_LEAF, N_ASSIGN
-};
+// AST structure field shared by all types 
+// llist_node *n	: for linklist
+// int op		: node operation
+#define ASTnode_SHARED_FIELDS \
+	struct llist_node n; \
+	int op;
 
 // AST structure (common)
 struct ASTnode {
-	int op;	//operator
+	ASTnode_SHARED_FIELDS 
 };
 
 // AST binary operation node
 struct ASTbinnode {
-	int op;
+	ASTnode_SHARED_FIELDS 
 	struct ASTnode *left;
 	struct ASTnode *right;
 };
 
 // AST if statement node
 struct ASTifnode {
-	int op;
+	ASTnode_SHARED_FIELDS 
 	struct ASTnode *left;	// condition true branch
 	struct ASTnode *right;	// condition false branch
 	struct ASTnode *cond;
@@ -51,33 +48,38 @@ struct ASTifnode {
 
 // AST unary operation node
 struct ASTunnode {
-	int op;
-	struct ASTnode *c;
+	ASTnode_SHARED_FIELDS 
+	struct ASTnode *left;
 };
 
 // AST block node
 struct ASTblocknode {
-	int op;
+	ASTnode_SHARED_FIELDS 
 	struct linklist st; // statements linklist
 };
 
-// AST literal node
-struct ASTlitnode {
-	int op;
-	struct value_type type;
-	void *val;
+// AST integer literal (32bit) node
+struct ASTi32node {
+	ASTnode_SHARED_FIELDS 
+	int32_t val;
+};
+
+// AST integer literal (64bit) node
+struct ASTi64node {
+	ASTnode_SHARED_FIELDS 
+	int64_t val;
 };
 
 // AST assign literal node
 struct ASTassignnode {
-	int op;
-	int left;
+	ASTnode_SHARED_FIELDS 
+	struct ASTnode* left;
 	struct ASTnode* right;
 };
 
 // AST variable value node
 struct ASTvarnode {
-	int op;
+	ASTnode_SHARED_FIELDS 
 	int id;
 };
 
@@ -87,9 +89,8 @@ struct ASTnode* ast_make_lit_i64(int64_t x);
 struct ASTnode* ast_make_unary(int op, struct ASTnode *c);
 struct ASTnode* ast_make_block();
 struct ASTnode* ast_make_var(int id);
-struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right);
+struct ASTnode* ast_make_assign(int op, struct ASTnode *left, struct ASTnode *right);
 struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond);
-int ast_type(int t);
 void ast_free(struct ASTnode *x);
 
 #endif

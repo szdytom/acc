@@ -1,3 +1,4 @@
+/*
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -119,4 +120,4 @@ int addglob(char *s) {
 	trie_set(ss, res);
 	return (res);
 }
-
+*/

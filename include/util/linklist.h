@@ -2,7 +2,6 @@
 #define ACC_UTIL_LINKLIST_H
 
 struct llist_node {
-	void *val;
 	struct llist_node *nxt;
 };
 
@@ -11,8 +10,6 @@ struct linklist {
 	struct llist_node *head;
 	struct llist_node *tail;
 };
-
-struct llist_node* llist_createnode(void *val);
 
 void llist_init(struct linklist *l);
 void llist_free(struct linklist *l);

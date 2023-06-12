@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include "scan.h"
 
+void fail_target(const char *target_name) {
+	fprintf(stderr, "unknown target: %s.\n", target_name);
+	exit(1);
+}
+
 void fail_malloc(const char *func_name) {
 	fprintf(stderr, "%s: unable to malloc.\n", func_name);
 	exit(1);

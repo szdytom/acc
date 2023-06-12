@@ -4,6 +4,18 @@
 #include "fatals.h"
 #include "util/linklist.h"
 
+const char *ast_opname[] = {
+	"=",
+	"+", "-", "*", "/",
+	"==", "!=", "<", ">", "<=", ">=",
+	"int32", "int64",
+	"var",
+	"block",
+	"print", "if", "while",
+	"return",
+	NULL
+};
+
 // Build and return a binary AST node
 struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *right) {
 	struct ASTbinnode *x = malloc_or_fail(sizeof(struct ASTbinnode), __FUNCTION__);
@@ -14,25 +26,21 @@ struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *ri
 	return ((struct ASTnode*)x);
 }
 
-// Make an AST int32 literal node
+// Make an AST integer literal (32bit) node
 struct ASTnode* ast_make_lit_i32(int32_t v) {
-	struct ASTlitnode *x = malloc_or_fail(sizeof(struct ASTlitnode), __FUNCTION__);
+	struct ASTi32node *x = malloc_or_fail(sizeof(struct ASTi32node), __FUNCTION__);
 
-	x->op = A_LIT;
-	x->type.vt = V_I32;
-	x->val = malloc_or_fail(sizeof(int32_t), __FUNCTION__);
-	*(int64_t*)x->val = v;
+	x->op = A_LIT_I32;
+	x->val = v;
 	return ((struct ASTnode*)x);
 }
 
-// Make an AST int32 literal node
+// Make an AST integer literal (64bit) node
 struct ASTnode* ast_make_lit_i64(int64_t v) {
-	struct ASTlitnode *x = malloc_or_fail(sizeof(struct ASTlitnode), __FUNCTION__);
+	struct ASTi64node *x = malloc_or_fail(sizeof(struct ASTi64node), __FUNCTION__);
 
-	x->op = A_LIT;
-	x->type.vt = V_I64;
-	x->val = malloc_or_fail(sizeof(int64_t), __FUNCTION__);
-	*(int64_t*)x->val = v;
+	x->op = A_LIT_I64;
+	x->val = v;
 	return ((struct ASTnode*)x);
 }
 
@@ -46,11 +54,11 @@ struct ASTnode* ast_make_var(int id) {
 }
 
 // Make a unary AST node: only one child
-struct ASTnode* ast_make_unary(int op, struct ASTnode *c) {
+struct ASTnode* ast_make_unary(int op, struct ASTnode *child) {
 	struct ASTunnode *x = malloc_or_fail(sizeof(struct ASTunnode), __FUNCTION__);
 
 	x->op = op;
-	x->c = c;
+	x->left = child;
 	return ((struct ASTnode*)x);
 }
 
@@ -64,7 +72,7 @@ struct ASTnode* ast_make_block() {
 }
 
 // Make a assignment ast node
-struct ASTnode* ast_make_assign(int op, int left, struct ASTnode *right) {
+struct ASTnode* ast_make_assign(int op, struct ASTnode *left, struct ASTnode *right) {
 	struct ASTassignnode *x = malloc_or_fail(sizeof(struct ASTassignnode), __FUNCTION__);
 
 	x->op = op;
@@ -84,66 +92,44 @@ struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct 
 	return ((struct ASTnode*)x);
 }
 
-// Translate ast operation type to ast node type
-int ast_type(int t) {
-	switch (t) {
-	case A_ADD: case A_SUB: case A_MUL: case A_DIV:
-	case A_EQ: case A_NE: case A_GT: case A_LT: case A_GE: case A_LE:
-	case A_IF: case A_WHILE:
-		return (N_BIN);
-	case A_ASSIGN:
-		return (N_ASSIGN);
-	case A_LIT: case A_VAR:
-		return (N_LEAF);
-	case A_BLOCK:
-		return (N_MULTI);
-	case A_PRINT:
-		return (N_UN);
-	default:
-		fail_ast_op(t, __FUNCTION__);
-	}
-}
-
 // free an AST's memory
 void ast_free(struct ASTnode *x) {
 	if (x == NULL) {
 		return;
 	}
 
-	switch (ast_type(x->op)) {
-	case N_ASSIGN: {
-		struct ASTassignnode *t = (struct ASTassignnode*)x;
-		ast_free(t->right);
-	}	break;
-	case N_BIN: {
-		struct ASTbinnode *t = (struct ASTbinnode*)x;
-		ast_free(t->left);
-		ast_free(t->right);
-		if (x->op == A_IF) {
+	switch (x->op) {
+		case A_IF: {
 			ast_free(((struct ASTifnode*)x)->cond);
-		}
-	}	break;
-	case N_UN: {
-		struct ASTunnode *t = (struct ASTunnode*)x;
-		ast_free(t->c);
-	}	break;
-	case N_MULTI: {
-		struct ASTblocknode *t = (struct ASTblocknode*)x;
-		struct llist_node *p = t->st.head;
-		while (p) {
-			ast_free(p->val);
-			p = p->nxt;
-		}
-		llist_free(&t->st);
-	}	break;
-	case N_LEAF: {
-		struct ASTlitnode *t = (struct ASTlitnode*)x;
-		if (t->op == A_LIT) {
-			if (t->val) {
-				free(t->val);
+		}	// dont break
+
+		case A_ASSIGN:
+		case A_ADD: case A_SUB: case A_MUL: case A_DIV:
+		case A_EQ: case A_NE: case A_GT: case A_LT: case A_GE: case A_LE:
+		case A_WHILE: {
+			struct ASTbinnode *t = (struct ASTbinnode*)x;
+			ast_free(t->left);
+			ast_free(t->right);
+		}	break;
+	
+		case A_PRINT: case A_RETURN: {
+			struct ASTunnode *t = (struct ASTunnode*)x;
+			ast_free(t->left);
+		}	break;
+
+		case A_BLOCK: {
+			struct ASTblocknode *t = (struct ASTblocknode*)x;
+			struct llist_node *p = t->st.head, *nxt;
+			while (p) {
+				nxt = p->nxt;
+				ast_free(p);
+				p = nxt;
 			}
-		}
-	}	break;
+			llist_free(&t->st);
+		}	break;
+
+		default: {
+		}	break;
 	}
 	free(x);
 }

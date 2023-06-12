@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include "token.h"
 
 const char *token_typename[63] = {
@@ -10,20 +9,18 @@ const char *token_typename[63] = {
 	"+", "-", "*", "/",
 	"==", "!=", "<", ">", "<=", ">=",
 	"int", "void", "char", "long",
-	"print", "if", "else", "while", "for",
-	"a signed integer literal (size 32)", "a signed integer literal (size 64)", "an indentifier"
+	"short",
+	"print", "if", "else",
+	"while", "for",
+	"return",
+	"a integer literal (16bit)", "a integer literal (32bit)", "a integer literal (64bit)",
+	"an identifier",
+	NULL
 };
 
 void token_free(struct token *t) {
-	if (t->val) {
-		free(t->val);
+	if (t->type == T_ID && t->val_s) {
+		free(t->val_s);
 	}
 	free(t);
-}
-
-struct token token_make_eof(void) {
-	struct token res;
-	res.type = T_EOF;
-	res.val = NULL;
-	return (res);
 }

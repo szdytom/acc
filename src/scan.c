@@ -41,7 +41,7 @@ static void skip_whitespaces(void) {
 
 // Scan and return an integer literal value from the input file.
 static void scan_int(struct token *t) {
-	long long res = 0;
+	int64_t res = 0;
 	int c = preview();
 	while ('0' <= c && c <= '9') {
 		res = res * 10 + (c - '0');
@@ -51,12 +51,10 @@ static void scan_int(struct token *t) {
 
 	if (INT32_MIN <= res && res <= INT32_MAX) {
 		t->type = T_I32_LIT;
-		t->val = malloc_or_fail(sizeof(int32_t), __FUNCTION__);
-		*((int32_t *)t->val) = (int)res;
+		t->val_i32 = (int32_t)res;
 	} else {
 		t->type = T_I64_LIT;
-		t->val = malloc_or_fail(sizeof(int64_t), __FUNCTION__);
-		*((int64_t *)t->val) = res;
+		t->val_i64 = (int64_t)res;
 	}
 }
 
@@ -102,6 +100,7 @@ static bool scan_keyword(struct token *t, char *s) {
 		"else",
 		"while",
 		"for",
+		"return",
 		NULL
 	};
 
@@ -114,7 +113,8 @@ static bool scan_keyword(struct token *t, char *s) {
 		T_ELSE,
 		T_WHILE,
 		T_FOR,
-		-1
+		T_RETURN,
+		T_EXCEED,
 	};
 
 	for (int i = 0; map_s[i] != NULL; ++i) {
@@ -139,7 +139,7 @@ static bool scan_1c(struct token *t) {
 		{'(', T_LP},
 		{')', T_RP},
 		{';', T_SEMI},
-		{'\0', -1}
+		{'\0', T_EXCEED}
 	};
 
 	int c = preview();
@@ -156,7 +156,6 @@ static bool scan_1c(struct token *t) {
 // Scan and return the next token found in the input.
 static struct token* scan(void) {
 	struct token *t = malloc_or_fail(sizeof(struct token), __FUNCTION__);
-	t->val = NULL;
 
 	skip_whitespaces();
 	int c = preview();
@@ -203,20 +202,16 @@ static struct token* scan(void) {
 			next();
 		}
 	} else {
-		// If it's a digit, scan the integer literal value in
-		if (isdigit(c)) {
+		if (isdigit(c)) { // If it's a digit, scan the integer literal value in
 			scan_int(t);
 		} else if (isalpha(c) || c == '_') {
-			t->val = scan_indentifier(NULL);
-			if (scan_keyword(t, t->val)) {
-				// got a keyword
-				free(t->val);
-				t->val = NULL;
-			} else {
-				// not a keyword, so it should be an indentifier.
-				t->type = T_INDENT;
+			t->val_s = scan_indentifier(NULL);
+			if (scan_keyword(t, t->val_s)) { // got a keyword
+				free(t->val_s);
+			} else { // not a keyword, so it should be an indentifier.
+				t->type = T_ID;
 			}
-		} else {
+		} else { // cannot match to anything we know, report error.
 			fail_char(c);
 		}
 	}
@@ -243,3 +238,4 @@ struct linklist scan_tokens(const char *name) {
 	fclose(Infile);
 	return (res);
 }
+

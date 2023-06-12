@@ -5,11 +5,9 @@
 #include "scan.h"
 #include "token.h"
 #include "ast.h"
-#include "symbol.h"
 #include "fatals.h"
 
 static struct linklist Tokens;	// current token for parsing
-static int skip_semi = 0;	// can skip statement semi (after block)
 
 // Check that we have a binary operator and return its precedence.
 // operators with larger precedence value will be evaluated first
@@ -57,7 +55,7 @@ static int arithop(int t) {
 
 // operator ssociativity direction
 // Returns	false if left to right, e.g. +
-// 			true if right to left, e.g. =
+// 		true if right to left, e.g. =
 static bool direction_rtl(int t) {
 	switch(t) {
 		case T_ASSIGN:
@@ -77,10 +75,12 @@ static void next(void) {
 // preview next kth token from input stream
 static struct token* preview(int k) {
 	if (Tokens.length <= k) {
-		static struct token token_eof;
-		token_eof = token_make_eof();
+		static struct token token_eof = {
+			.type = T_EOF
+		};
 		return (&token_eof);
 	}
+
 	struct token* res = llist_get(&Tokens, k);
 	return (res);
 }
@@ -92,9 +92,7 @@ static struct token* current(void) {
 
 // match a token or report syntax error
 static void match(int t) {
-	if (t == T_SEMI && skip_semi) {
-		skip_semi = 0;
-	} else if (current()->type == t) {
+	if (current()->type == t) {
 		next();
 	} else {
 		fail_ce_expect(token_typename[current()->type], token_typename[t]);
@@ -102,7 +100,7 @@ static void match(int t) {
 }
 
 // check current token's type or report syntax error.
-static void check(int t) {
+static void expect(int t) {
 	if (current()->type != t) {
 		fail_ce_expect(token_typename[current()->type], token_typename[t]);
 	}
@@ -122,11 +120,14 @@ static struct ASTnode* primary(void) {
 		res = expression();
 		match(T_RP);
 	} else if (current()->type == T_I32_LIT) {
-		res = ast_make_lit_i32(*(int32_t*)current()->val);
+		res = ast_make_lit_i32(current()->val_i32);
 		next();
 	} else if (current()->type == T_I64_LIT) {
-		res = ast_make_lit_i64(*(int64_t*)current()->val);
-	} else if (current()->type == T_INDENT) {
+		res = ast_make_lit_i64(current()->val_i64);
+		next();
+	} else if (current()->type == T_ID) {
+		// TODO: identifier.
+		/*
 		int id = findglob((char*)current()->val);
 		if (id == -1) {
 			fprintf(stderr, "syntax error on line %d: unknown indentifier %s.\n", Line, (char*)current()->val);
@@ -134,6 +135,9 @@ static struct ASTnode* primary(void) {
 		}
 		next();
 		return (ast_make_var(id));
+		*/
+		res = NULL;
+		next();
 	} else {
 		fprintf(stderr, "syntax error on line %d: primary expression excpeted.\n", Line);
 		exit(1);
@@ -178,7 +182,7 @@ static struct ASTnode* binexpr(int precedence) {
 }
 
 // parse one block of code, e.g. { a; b; }
-static struct ASTnode* parse_block(void) {
+static struct ASTnode* block(void) {
 	match(T_LB);
 	if (current()->type == T_RB) {
 		next();
@@ -196,15 +200,15 @@ static struct ASTnode* parse_block(void) {
 		}
 	}
 	match(T_RB);
-	skip_semi = 1;
 	return ((struct ASTnode*)res);
 }
 
 // parse an expression
 static struct ASTnode* expression(void) {
-	if (current()->type == T_LB) {
-		return (parse_block());
+	if (current()->type == T_SEMI) {
+		return (NULL);
 	}
+
 	return (binexpr(0));
 }
 
@@ -216,10 +220,11 @@ static struct ASTnode* print_statement(void) {
 	return (res);
 }
 
+/*
 // parse variable declaration statement
 static struct ASTnode* var_declaration(void) {
 	match(T_INT);
-	check(T_INDENT);
+	expect(T_IDENT);
 	if (findglob((char*)current()->val) != -1) {
 		fail_ce("variable declared twice.");
 	}
@@ -228,6 +233,7 @@ static struct ASTnode* var_declaration(void) {
 	match(T_SEMI);
 	return (NULL);
 }
+*/
 
 // parse an if statement
 static struct ASTnode* if_statement(void) {
@@ -284,6 +290,10 @@ static struct ASTnode* for_statement(void) {
 
 	if (body == NULL && inc == NULL) {
 		wbody = NULL;
+	} else if (body == NULL) {
+		wbody = inc;
+	} else if (inc == NULL) {
+		wbody = body;
 	} else {
 		struct ASTblocknode* wt = (struct ASTblocknode*)ast_make_block();
 		llist_pushback_notnull(&wt->st, body);
@@ -293,40 +303,80 @@ static struct ASTnode* for_statement(void) {
 
 	llist_pushback_notnull(&container->st, init);
 	llist_pushback(&container->st, ast_make_binary(A_WHILE, cond, wbody));
-	return (struct ASTnode*)container;
+	return ((struct ASTnode*)container);
+}
+
+static struct ASTnode* return_statement() {
+	match(T_RETURN);
+	struct ASTnode *res = expression();
+	match(T_SEMI);
+	return (ast_make_unary(A_RETURN, res));
 }
 
 // parse one statement
 static struct ASTnode* statement(void) {
 	switch (current()->type) {
+		case T_LB:
+			return (block());
+
 		case T_SEMI:
 			return (NULL);
+
 		case T_PRINT:
 			return (print_statement());
-		case T_INT:
-			return (var_declaration());
+
+//		case T_INT:
+//			return (var_declaration());
 		case T_IF:
 			return (if_statement());
+
 		case T_WHILE:
 			return (while_statement());
+
 		case T_FOR:
 			return (for_statement());
-		default:
-			skip_semi = 0;
+
+		case T_RETURN:
+			return (return_statement());
+
+		default: {
 			struct ASTnode* res = expression();
 			match(T_SEMI);
 			return (res);
+		}
 	}
+}
+
+// Parse one top-level function
+// Sets the func_name param.
+static struct ASTnode* function(char **func_name) {
+	match(T_INT);
+	expect(T_ID);
+	*func_name = current()->val_s;	// transfer ownership of the identifier string to caller
+	current()->val_s = NULL;	// prevent it from being freed in token_free() called by next.
+	next();
+
+	match(T_LP);
+	if (current()->type == T_VOID) {
+		next();
+		goto END_PARAM_LIST;
+	}
+	// TODO: param list
+
+END_PARAM_LIST:
+	match(T_RP);
+	return (block());
 }
 
 // Parse ans return the full ast
 struct ASTnode* parse(const char *name) {
 	Tokens = scan_tokens(name);
-	struct ASTnode* res = statement();
-	struct llist_node *p = Tokens.head;
-	while (p != Tokens.tail) {
-		free(p->val);
-		p = p->nxt;
+	char *func_name;
+	struct ASTnode* res = function(&func_name);
+
+	free(func_name);
+	while (Tokens.length > 0) {
+		token_free(llist_popfront(&Tokens));
 	}
 	llist_free(&Tokens);
 	return (res);

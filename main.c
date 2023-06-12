@@ -3,9 +3,9 @@
 #include <string.h>
 #include "scan.h"
 #include "parse.h"
-#include "cg.h"
 #include "ast.h"
-#include "symbol.h"
+#include "target.h"
+#include "print_ast.h"
 
 // Print out a usage if started incorrectly
 static void usage(char *prog) {
@@ -14,48 +14,29 @@ static void usage(char *prog) {
 	exit(1);
 }
 
-//Do clean up job
+// Do clean up job
 void unload(void) {
-	cg_unload();
-	symbol_unload();
 }
 
 int main(int argc, char *argv[]) {
-	atexit(unload);
+//	atexit(unload);
 	if (argc < 3) {
 		usage(argv[0]);
 	}
 
-	int outfile_opened = 0;
+	FILE *Outfile;
 	if (argc >= 4) {
-		open_outputfile(argv[3]);
-		outfile_opened = 1;
-	}
-
-	int target;
-	if (!strcmp(argv[1], "x86_64")) {
-		target = CG_X64;
-		if (!outfile_opened) {
-			open_outputfile("out.s");
-		}
-	} else if (!strcmp(argv[1], "llvm")) {
-		target = CG_LLVM;
-		if (!outfile_opened) {
-			open_outputfile("out.ll");
-		}
-	} else if (!strcmp(argv[1], "ast")) {
-		target = CG_AST;
-		if (!outfile_opened) {
-			open_outputfile("out.txt");
-		}
+		Outfile = fopen(argv[3], "w");
 	} else {
-		fprintf(stderr, "Unknow target %s.\n", argv[1]);
-		exit(1);
+		Outfile = fopen("out.txt", "w");
 	}
 
-	symbol_init();
+	int target = target_parse(argv[1]);
 	struct ASTnode *rt = parse(argv[2]);
-	cg_main(target, rt);
+	if (target == TARGET_AST) {
+		debug_ast_print(Outfile, rt);
+	}
 	ast_free(rt);
+	fclose(Outfile);
 	return (0);
 }

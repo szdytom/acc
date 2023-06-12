@@ -1,3 +1,4 @@
+/*
 #ifndef ACC_UTIL_HASHMAP
 #define ACC_UTIL_HASHMAP
 
@@ -10,3 +11,4 @@ struct hashmap {
 void hashmap_init();
 
 #endif
+*/

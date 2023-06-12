@@ -1,3 +1,4 @@
+/*
 #ifndef ACC_SYMBOL_H
 #define ACC_SYMBOL_H
 
@@ -11,3 +12,4 @@ int findglob(char *s);
 int addglob(char *s);
 
 #endif
+*/

@@ -1,28 +1,21 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "fatals.h"
 #include "util/linklist.h"
 
-// Create a linklist node using given value.
-struct llist_node* llist_createnode(void *val) {
-	struct llist_node *res = malloc(sizeof(struct llist_node));
-	if (res == NULL) {
-		fail_malloc(__FUNCTION__);
-	}
-	res->nxt = NULL;
-	res->val = val;
-	return (res);
-}
-
 // Appends an element in the linklist. 
 void llist_pushback(struct linklist *l, void *val) {
+	struct llist_node *x = (struct llist_node*)val;
+	x->nxt = NULL;
 	l->length += 1;
 	if (!l->tail) {
-		l->head = l->tail = llist_createnode(val);
+		l->head = l->tail = val;
 		return;
 	}
-	l->tail->nxt = llist_createnode(val);
-	l->tail = l->tail->nxt;
+
+	l->tail->nxt = x;
+	l->tail = x;
 }
 
 // A variant of pushback
@@ -33,7 +26,7 @@ void llist_pushback_notnull(struct linklist *l, void *val) {
 	}
 }
 
-// Returns the _index_ thh element.
+// Returns the _index_ th element.
 void* llist_get(struct linklist *l, int index) {
 	if (index >= l->length) {
 		fprintf(stderr, "linklist out of range.\n");
@@ -44,21 +37,12 @@ void* llist_get(struct linklist *l, int index) {
 	for (int i = 0; i < index; ++i) {
 		p = p->nxt;
 	}
-	return (p->val);
+	return (p);
 }
 
-// Modify the _index_ thh element.
-void llist_set(struct linklist *l, int index, void *val) {
-	if (index >= l->length) {
-		fprintf(stderr, "linklist out of range.\n");
-		abort();
-	}
-
-	struct llist_node *p = l->head;
-	for (int i = 0; i < index; ++i) {
-		p = p->nxt;
-	}
-	p->val = val;
+// Check if the given linklist is empty
+bool llist_isempty(struct linklist *l) {
+	return (l->length == 0);
 }
 
 // Init a empty linklist.
@@ -68,29 +52,13 @@ void llist_init(struct linklist *l) {
 	l->tail = NULL;
 }
 
-// Frees the linklist.
-// Caller must make sure all elements in the linklist has already been freed. 
+// Frees all elements in the link list.
+// Memory leaks if linklist element is still containing some pointer.
 void llist_free(struct linklist *l) {
 	struct llist_node *p = l->head;
 	struct llist_node *nxt;
 	while (p) {
 		nxt = p->nxt;
-		free(p);
-		p = nxt;
-	}
-	llist_init(l);
-}
-
-// Frees the linklist.
-// Callee will free all elements in the link list.
-void llist_free_full(struct linklist *l) {
-	struct llist_node *p = l->head;
-	struct llist_node *nxt;
-	while (p) {
-		nxt = p->nxt;
-		if (p->val) {
-			free(p->val);
-		}
 		free(p);
 		p = nxt;
 	}
@@ -105,8 +73,8 @@ void llist_insert(struct linklist *l, int index, void *val) {
 		return;
 	}
 
+	struct llist_node *x = (struct llist_node*)val;
 	l->length += 1;
-	struct llist_node *x = llist_createnode(val);
 	if (index == 0) {
 		x->nxt = l->head;
 		l->head = x;
@@ -129,16 +97,13 @@ void* llist_popfront(struct linklist *l) {
 	}
 
 	l->length -= 1;
-	void *res = l->head->val;
+	struct llist_node *res = l->head;
+	l->head = res->nxt;
+	res->nxt = NULL;
 	if (l->length == 0) {
-		free(l->head);
 		l->head = l->tail = NULL;
-		return (res);
 	}
 
-	struct llist_node *p = l->head;
-	l->head = p->nxt;
-	free(p);
 	return (res);
 }
 
@@ -148,11 +113,11 @@ void* llist_remove(struct linklist *l, int index) {
 	if (index >= l->length) {
 		return (NULL);
 	}
-	
+
 	if (index == 0) {
 		return (llist_popfront(l));
 	}
-	
+
 	l->length -= 1;
 	struct llist_node *p = l->head;
 	for (int i = 0; i < index - 2; ++i) {
@@ -160,7 +125,6 @@ void* llist_remove(struct linklist *l, int index) {
 	}
 	struct llist_node *q = p->nxt;
 	p->nxt = q->nxt;
-	void *res = q->val;
-	free(q);
-	return res;
+	q->nxt = NULL;
+	return (q);
 }
