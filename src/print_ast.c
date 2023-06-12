@@ -23,7 +23,7 @@ static void ast_dfs(FILE* Outfile, struct ASTnode *x) {
 
 	switch(x->op) {
 		case A_RETURN: case A_PRINT: {
-			struct ASTunnode *t = x;
+			struct ASTunnode *t = (struct ASTunnode*)x;
 			fprintf(Outfile, "--->UNOP(%s)\n", ast_opname[x->op]);
 			tabs += 1;
 			ast_dfs(Outfile, t->left);
@@ -31,22 +31,22 @@ static void ast_dfs(FILE* Outfile, struct ASTnode *x) {
 		}	break;
 
 		case A_LIT_I32: {
-			struct ASTi32node *t = x;
+			struct ASTi32node *t = (struct ASTi32node*)x;
 			fprintf(Outfile, "--->INT32(%d)\n", t->val);
 		}	break;
 
 		case A_LIT_I64: {
-			struct ASTi64node *t = x;
+			struct ASTi64node *t = (struct ASTi64node*)x;
 			fprintf(Outfile, "--->INT64(%lld)\n", t->val);
 		}	break;
 
 		case A_BLOCK: {
-			struct ASTblocknode *t = x;
+			struct ASTblocknode *t = (struct ASTblocknode*)x;
 			fprintf(Outfile, "--->BLOCK(%d statements)\n", t->st.length);
 			tabs += 1;
 			struct llist_node *p = t->st.head;
 			while (p) {
-				ast_dfs(Outfile, p);
+				ast_dfs(Outfile, (struct ASTnode*)p);
 				p = p->nxt;
 			}
 			tabs -= 1;

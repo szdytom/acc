@@ -19,7 +19,7 @@ void unload(void) {
 }
 
 int main(int argc, char *argv[]) {
-//	atexit(unload);
+	atexit(unload);
 	if (argc < 3) {
 		usage(argv[0]);
 	}

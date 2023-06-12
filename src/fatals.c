@@ -25,18 +25,18 @@ void fail_ast_op(int op, const char *func_name) {
 	exit(1);
 }
 
-void fail_ce_expect(const char *expected, const char *got) {
-	fprintf(stderr, "syntax error on line %d: expected %s, got %s.\n", Line, expected, got);
+void fail_ce_expect(int line, const char *expected, const char *got) {
+	fprintf(stderr, "syntax error on line %d: expected %s, got %s.\n", line, expected, got);
 	exit(1);
 }
 
-void fail_ce(const char *reason) {
-	fprintf(stderr, "syntax error on line %d: %s.\n", Line, reason);
+void fail_ce(int line, const char *reason) {
+	fprintf(stderr, "syntax error on line %d: %s.\n", line, reason);
 	exit(1);
 }
 
-void fail_char(int c) {
-	fprintf(stderr, "Unrecognised character %c on line %d.\n", c, Line);
+void fail_char(int line, int c) {
+	fprintf(stderr, "Unrecognised character %c on line %d.\n", c, line);
 	exit(1);
 }
 

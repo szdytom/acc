@@ -8,7 +8,7 @@
 #include "fatals.h"
 #include "util/misc.h"
 
-int Line = 1;
+static int Line = 1;
 static int Preview;
 static FILE *Infile;
 
@@ -155,9 +155,11 @@ static bool scan_1c(struct token *t) {
 
 // Scan and return the next token found in the input.
 static struct token* scan(void) {
-	struct token *t = malloc_or_fail(sizeof(struct token), __FUNCTION__);
-
 	skip_whitespaces();
+
+	struct token *t = malloc_or_fail(sizeof(struct token), __FUNCTION__);
+	t->line = Line;
+
 	int c = preview();
 	if (c == EOF) {
 		t->type = T_EOF;
@@ -183,7 +185,8 @@ static struct token* scan(void) {
 			t->type = T_NE;
 			next();
 		} else {
-			fail_char(c);
+			// TODO: the not operator
+			fail_char(t->line, c);
 		}
 	} else if (c == '<') {
 		t->type = T_LT;
@@ -212,7 +215,7 @@ static struct token* scan(void) {
 				t->type = T_ID;
 			}
 		} else { // cannot match to anything we know, report error.
-			fail_char(c);
+			fail_char(t->line, c);
 		}
 	}
 	return (t);

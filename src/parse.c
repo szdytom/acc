@@ -11,8 +11,8 @@ static struct linklist Tokens;	// current token for parsing
 
 // Check that we have a binary operator and return its precedence.
 // operators with larger precedence value will be evaluated first
-static int op_precedence(int t) {
-	switch (t) {
+static int op_precedence(struct token *t) {
+	switch (t->type) {
 		case T_ASSIGN:
 			return (20);
 		case T_GT: case T_GE: case T_LT: case T_LE:
@@ -24,12 +24,12 @@ static int op_precedence(int t) {
 		case T_STAR: case T_SLASH:
 			return (90);
 		default:
-			fail_ce_expect("an operator", token_typename[t]);
+			fail_ce_expect(t->line, "an operator", token_typename[t->type]);
 	}
 }
 
 // Convert a arithmetic token into an AST operation.
-static int arithop(int t) {
+static int arithop(struct token *t) {
 	static const int map[][2] = {
 		{T_PLUS,	A_ADD},
 		{T_MINUS,	A_SUB},
@@ -46,11 +46,11 @@ static int arithop(int t) {
 	};
 
 	for (int i = 0; map[i][0] != -1; ++i) {
-		if (t == map[i][0]) {
+		if (t->type == map[i][0]) {
 			return map[i][1];
 		}
 	}
-	fail_ce_expect("an binary operator", token_typename[t]);
+	fail_ce_expect(t->line, "an binary operator", token_typename[t->type]);
 }
 
 // operator ssociativity direction
@@ -95,14 +95,14 @@ static void match(int t) {
 	if (current()->type == t) {
 		next();
 	} else {
-		fail_ce_expect(token_typename[current()->type], token_typename[t]);
+		fail_ce_expect(current()->line, token_typename[t], token_typename[current()->type]);
 	}
 }
 
 // check current token's type or report syntax error.
 static void expect(int t) {
 	if (current()->type != t) {
-		fail_ce_expect(token_typename[current()->type], token_typename[t]);
+		fail_ce_expect(current()->line, token_typename[t], token_typename[current()->type]);
 	}
 }
 
@@ -113,20 +113,21 @@ static struct ASTnode* expression(void);
 // AST node representing it.
 static struct ASTnode* primary(void) {
 	struct ASTnode *res;
-
-	if (current()->type == T_LP) {
+	struct token *t = current();
+	if (t->type == T_LP) {
 		// ( expr ) considered as primary
 		next();
 		res = expression();
 		match(T_RP);
-	} else if (current()->type == T_I32_LIT) {
-		res = ast_make_lit_i32(current()->val_i32);
+	} else if (t->type == T_I32_LIT) {
+		res = ast_make_lit_i32(t->val_i32);
 		next();
-	} else if (current()->type == T_I64_LIT) {
+	} else if (t->type == T_I64_LIT) {
 		res = ast_make_lit_i64(current()->val_i64);
 		next();
-	} else if (current()->type == T_ID) {
+	} else if (t->type == T_ID) {
 		// TODO: identifier.
+		fail_ce(t->line, "got an identifier");
 		/*
 		int id = findglob((char*)current()->val);
 		if (id == -1) {
@@ -136,11 +137,8 @@ static struct ASTnode* primary(void) {
 		next();
 		return (ast_make_var(id));
 		*/
-		res = NULL;
-		next();
 	} else {
-		fprintf(stderr, "syntax error on line %d: primary expression excpeted.\n", Line);
-		exit(1);
+		fail_ce(t->line, "primary expression expected");
 	}
 	return (res);
 }
@@ -155,28 +153,28 @@ static struct ASTnode* binexpr(int precedence) {
 	struct ASTnode *left, *right;
 
 	left = primary();
-	int tt = current()->type;
-	if (!is_binop(tt)) {
+	struct token *op = current();
+	if (!is_binop(op->type)) {
 		return (left);
 	}
 
-	int tp = op_precedence(tt);
+	int tp = op_precedence(op);
 	while (tp > precedence) {
 		next();
 
-		if (direction_rtl(tt)) {
+		if (direction_rtl(op->type)) {
 			right = binexpr(precedence);
-			left = ast_make_assign(arithop(tt), ((struct ASTvarnode*)left)->id, right);
+			left = ast_make_assign(arithop(op), left, right);
 		} else {
 			right = binexpr(tp);
-			left = ast_make_binary(arithop(tt), left, right); // join right into left
+			left = ast_make_binary(arithop(op), left, right); // join right into left
 		}
 
-		tt = current()->type;
-		if (!is_binop(tt)) {
+		op = current();
+		if (!is_binop(op->type)) {
 			return (left);
 		}
-		tp = op_precedence(tt);
+		tp = op_precedence(op);
 	}
 	return (left);
 }

@@ -101,7 +101,7 @@ void ast_free(struct ASTnode *x) {
 	switch (x->op) {
 		case A_IF: {
 			ast_free(((struct ASTifnode*)x)->cond);
-		}	// dont break
+		}	[[fallthrough]];
 
 		case A_ASSIGN:
 		case A_ADD: case A_SUB: case A_MUL: case A_DIV:
@@ -111,7 +111,7 @@ void ast_free(struct ASTnode *x) {
 			ast_free(t->left);
 			ast_free(t->right);
 		}	break;
-	
+
 		case A_PRINT: case A_RETURN: {
 			struct ASTunnode *t = (struct ASTunnode*)x;
 			ast_free(t->left);
@@ -122,7 +122,7 @@ void ast_free(struct ASTnode *x) {
 			struct llist_node *p = t->st.head, *nxt;
 			while (p) {
 				nxt = p->nxt;
-				ast_free(p);
+				ast_free((struct ASTnode*)p);
 				p = nxt;
 			}
 			llist_free(&t->st);

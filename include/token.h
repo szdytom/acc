@@ -7,6 +7,7 @@
 // Token structure
 struct token {
 	struct llist_node n;
+	int line;	// token location line number
 	int type;	// token type
 	union {		// hold the value of the literal that we scanned in
 		int16_t val_i16;

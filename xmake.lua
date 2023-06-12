@@ -4,6 +4,8 @@ set_basename("acc")
 set_languages("c11")
 set_targetdir(".")
 
+set_policy("build.warning", true)
+
 target("build")
 	set_kind("binary")
 	set_default(true)
