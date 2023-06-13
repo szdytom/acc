@@ -11,6 +11,11 @@ enum {
 	// Loading immediates
 	Q_IMM_I32,	// integer (32bits)
 
+	// Arithmetic operations
+	Q_NEG,		// negation
+	Q_NOT,		// bitwise not
+	Q_CMP_EQ,	// compare whether equal
+
 	// Terminates
 	Q_RET,		// return 
 	Q_BR_ALWAYS,	// conditional goto: always goto true branch.

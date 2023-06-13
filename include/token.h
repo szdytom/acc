@@ -23,7 +23,9 @@ enum {
 	T_SEMI,					// ;
 	T_LB, T_RB, T_LP, T_RP,			// { } ( )
 	T_ASSIGN,				// =
-	T_PLUS, T_MINUS, T_STAR, T_SLASH,	// + - * /
+	T_PLUS, T_MINUS, T_STAR, T_SLASH,	// - + - * /
+	T_LNOT, T_LAND, T_LOR,			// ! && ||
+	T_BNOT,					// ~
 	T_EQ, T_NE, T_LT, T_GT, T_LE, T_GE,	// == != < > <= >=
 	T_INT, T_VOID, T_CHAR, T_LONG,		// int void char long
 	T_SHORT,				// short

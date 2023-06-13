@@ -185,8 +185,7 @@ static struct token* scan(void) {
 			t->type = T_NE;
 			next();
 		} else {
-			// TODO: the not operator
-			fail_char(t->line, c);
+			t->type = T_LNOT;
 		}
 	} else if (c == '<') {
 		t->type = T_LT;
@@ -203,6 +202,27 @@ static struct token* scan(void) {
 		if (c == '=') {
 			t->type = T_GE;
 			next();
+		}
+	} else if (c == '~') {
+		t->type = T_BNOT;
+		next();
+	} else if (c == '&') {
+		next();
+		c = preview();
+		if (c == '&') {
+			t->type = T_LAND;
+		} else {
+			// TODO: bitwise and
+			fail_char(t->line, c);
+		}
+	} else if (c == '|') {
+		next();
+		c = preview();
+		if (c == '|') {
+			t->type = T_LOR;
+		} else {
+			// TODO: bitwise or
+			fail_char(t->line, c);
 		}
 	} else {
 		if (isdigit(c)) { // If it's a digit, scan the integer literal value in

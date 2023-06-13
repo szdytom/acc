@@ -10,7 +10,7 @@
 static struct linklist Tokens;	// current token for parsing
 
 // Check that we have a binary operator and return its precedence.
-// operators with larger precedence value will be evaluated first
+// Operators with larger precedence value will be evaluated first.
 static int op_precedence(struct token *t) {
 	switch (t->type) {
 		case T_ASSIGN:
@@ -28,8 +28,8 @@ static int op_precedence(struct token *t) {
 	}
 }
 
-// Convert a arithmetic token into an AST operation.
-static int arithop(struct token *t) {
+// Converts a binary arithmetic token into an AST operation.
+static int binary_arithop(struct token *t) {
 	static const int map[][2] = {
 		{T_PLUS,	A_ADD},
 		{T_MINUS,	A_SUB},
@@ -42,6 +42,8 @@ static int arithop(struct token *t) {
 		{T_GT,		A_GT},
 		{T_GE,		A_GE},
 		{T_ASSIGN,	A_ASSIGN},
+		{T_LAND,	A_LAND},
+		{T_LOR,		A_LOR},
 		{-1}
 	};
 
@@ -53,7 +55,25 @@ static int arithop(struct token *t) {
 	fail_ce_expect(t->line, "an binary operator", token_typename[t->type]);
 }
 
-// operator ssociativity direction
+// Converts a unary arithmetic token into an AST operation.
+static int unary_arithop(struct token *t) {
+	static const int map[][2] = {
+		{T_MINUS,	A_NEG},
+		{T_LNOT,	A_LNOT},
+		{T_BNOT,	A_BNOT},
+		{-1}
+	};
+
+	for (int i = 0; map[i][0] != -1; ++i) {
+		if (t->type == map[i][0]) {
+			return map[i][1];
+		}
+	}
+
+	fail_ce_expect(t->line, "an unary operator", token_typename[t->type]);
+}
+
+// Operator associativity direction
 // Returns	false if left to right, e.g. +
 // 		true if right to left, e.g. =
 static bool direction_rtl(int t) {
@@ -114,6 +134,7 @@ static struct ASTnode* expression(void);
 static struct ASTnode* primary(void) {
 	struct ASTnode *res;
 	struct token *t = current();
+
 	if (t->type == T_LP) {
 		// ( expr ) considered as primary
 		next();
@@ -143,16 +164,50 @@ static struct ASTnode* primary(void) {
 	return (res);
 }
 
-// Check if it is binary operator
-static int is_binop(int t) {
-	return (T_ASSIGN <= t && t <= T_GE);
+// Returns whether the given token type can be a prefix operator (negation, logical not, bitwise not)
+static bool is_prefix_op(int op) {
+	switch (op) {
+		case T_MINUS: case T_LNOT: case T_BNOT:
+			return (true);
+
+		default:
+			return (false);
+	}
+}
+
+// Parses a primary expression with prefixes, e.g. ~10
+static struct ASTnode* prefixed_primary(void) {
+	struct token *t = current();
+
+	if (is_prefix_op(t->type)) {
+		next();
+		struct ASTnode *child = prefixed_primary();
+		return (ast_make_unary(unary_arithop(t), child));
+	}
+
+	return (primary());
+}
+
+// Returns whether the given token type can be a binary operator.
+static bool is_binop(int t) {
+	switch (t) {
+		case T_ASSIGN:
+		case T_PLUS: case T_MINUS: case T_STAR: case T_SLASH:
+		case T_LAND: case T_LOR:
+		case T_EQ: case T_NE: case T_LT:
+		case T_GT: case T_LE: case T_GE:
+			return (true);
+
+		default:
+			return (false);
+	}
 }
 
 // Return an AST tree whose root is a binary operator
 static struct ASTnode* binexpr(int precedence) {
 	struct ASTnode *left, *right;
 
-	left = primary();
+	left = prefixed_primary();
 	struct token *op = current();
 	if (!is_binop(op->type)) {
 		return (left);
@@ -164,10 +219,10 @@ static struct ASTnode* binexpr(int precedence) {
 
 		if (direction_rtl(op->type)) {
 			right = binexpr(precedence);
-			left = ast_make_assign(arithop(op), left, right);
+			left = ast_make_assign(binary_arithop(op), left, right);
 		} else {
 			right = binexpr(tp);
-			left = ast_make_binary(arithop(op), left, right); // join right into left
+			left = ast_make_binary(binary_arithop(op), left, right); // join right into left
 		}
 
 		op = current();
@@ -304,7 +359,7 @@ static struct ASTnode* for_statement(void) {
 	return ((struct ASTnode*)container);
 }
 
-static struct ASTnode* return_statement() {
+static struct ASTnode* return_statement(void) {
 	match(T_RETURN);
 	struct ASTnode *res = expression();
 	match(T_SEMI);
@@ -347,7 +402,7 @@ static struct ASTnode* statement(void) {
 
 // Parse one top-level function
 // Sets the func_name param.
-static struct Afunction* function() {
+static struct Afunction* function(void) {
 	struct Afunction *res = afunc_make();
 
 	match(T_INT);

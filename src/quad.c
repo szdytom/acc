@@ -84,7 +84,20 @@ struct Qvar* qfunc_new_var(struct Qfunction *f) {
 	return (res);
 }
 
+// Translate an AST unary arithmetic opcode to a Quad opcode.
+static int unary_arithop(int op) {
+	switch (op) {
+		case A_NEG:	return (Q_NEG);
+		case A_BNOT:	return (Q_NOT);
+		default:	fail_quad_op(op, __FUNCTION__);
+	}
+}
+
 static struct Qvar* qcg_dfs(struct ASTnode *x, struct Qfunction *f, struct Qblock *b) {
+	if (x == NULL) {
+		return (NULL);
+	}
+
 	switch (x->op) {
 		case A_RETURN: {
 			struct ASTunnode *t = (void*)x;
@@ -92,13 +105,6 @@ static struct Qvar* qcg_dfs(struct ASTnode *x, struct Qfunction *f, struct Qbloc
 			qblock_add_ins(b, quad_make(Q_RET, NULL, value, NULL));
 			b->is_complete = true;
 			return (NULL);
-		}
-
-		case A_LIT_I32: {
-			struct ASTi32node *t = (void*)x;
-			struct Qvar *res = qfunc_new_var(f);
-			qblock_add_ins(b, quad_make_i32(res, t->val));
-			return (res);
 		}
 
 		case A_BLOCK: {
@@ -109,6 +115,31 @@ static struct Qvar* qcg_dfs(struct ASTnode *x, struct Qfunction *f, struct Qbloc
 				p = p->nxt;
 			}
 			return (NULL);
+		}
+
+		case A_LIT_I32: {
+			struct Qvar *res = qfunc_new_var(f);
+			struct ASTi32node *t = (void*)x;
+			qblock_add_ins(b, quad_make_i32(res, t->val));
+			return (res);
+		}
+
+		case A_NEG: case A_BNOT: {
+			struct Qvar *res = qfunc_new_var(f);
+			struct ASTunnode *t = (void*)x;
+			struct Qvar *value = qcg_dfs(t->left, f, b);
+			qblock_add_ins(b, quad_make(unary_arithop(x->op), res, value, NULL));
+			return (res);
+		}
+
+		case A_LNOT: {
+			struct Qvar *res = qfunc_new_var(f);
+			struct ASTunnode *t = (void*)x;
+			struct Qvar *value = qcg_dfs(t->left, f, b);
+			struct Qvar *zero = qfunc_new_var(f);
+			qblock_add_ins(b, quad_make_i32(zero, 0));
+			qblock_add_ins(b, quad_make(Q_CMP_EQ, res, value, zero));
+			return (res);
 		}
 
 		default: {
@@ -163,7 +194,23 @@ static void quad_debug_print(struct Quad *self, FILE *Outfile) {
 		}	break;
 
 		case Q_RET: {
-			fprintf(Outfile, "\tret $%d.\n", self->left->id);
+			if (self->left) {
+				fprintf(Outfile, "\tret $%d.\n", self->left->id);
+			} else {
+				fputs("\tret.", Outfile);
+			}
+		}	break;
+
+		case Q_NEG: {
+			fprintf(Outfile, "\t$%d = neg $%d;\n", self->dest->id, self->left->id);
+		}	break;
+
+		case Q_NOT: {
+			fprintf(Outfile, "\t$%d = not $%d;\n", self->dest->id, self->left->id);
+		}	break;
+
+		case Q_CMP_EQ: {
+			fprintf(Outfile, "\t$%d = eq $%d, $%d;\n", self->dest->id, self->left->id, self->right->id);
 		}	break;
 
 		default: {

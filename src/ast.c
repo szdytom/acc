@@ -6,8 +6,10 @@
 
 const char *ast_opname[] = {
 	"=",
-	"+", "-", "*", "/",
+	"neg", "add", "sub", "mul", "div",
 	"==", "!=", "<", ">", "<=", ">=",
+	"not", "and", "or",
+	"~",
 	"int32", "int64",
 	"var",
 	"block",
@@ -188,7 +190,8 @@ void ast_free(struct ASTnode *x) {
 			ast_free(t->right);
 		}	break;
 
-		case A_PRINT: case A_RETURN: {
+		case A_PRINT: case A_RETURN:
+		case A_LNOT: case A_BNOT: case A_NEG: {
 			struct ASTunnode *t = (struct ASTunnode*)x;
 			ast_free(t->left);
 		}	break;
