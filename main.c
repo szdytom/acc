@@ -5,7 +5,7 @@
 #include "parse.h"
 #include "ast.h"
 #include "target.h"
-#include "print_ast.h"
+#include "quad.h"
 
 // Print out a usage if started incorrectly
 static void usage(char *prog) {
@@ -14,8 +14,13 @@ static void usage(char *prog) {
 	exit(1);
 }
 
+static FILE *Outfile;
+
 // Do clean up job
 void unload(void) {
+	if (Outfile && Outfile != stdout) {
+		fclose(Outfile);
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -24,19 +29,21 @@ int main(int argc, char *argv[]) {
 		usage(argv[0]);
 	}
 
-	FILE *Outfile;
 	if (argc >= 4) {
 		Outfile = fopen(argv[3], "w");
 	} else {
-		Outfile = fopen("out.txt", "w");
+		Outfile = stdout;
 	}
 
 	int target = target_parse(argv[1]);
-	struct ASTnode *rt = parse(argv[2]);
+	struct Afunction *afunc = parse_source(argv[2]);
 	if (target == TARGET_AST) {
-		debug_ast_print(Outfile, rt);
+		afunc_debug_print(Outfile, afunc);
+	} else if (target == TARGET_QUAD) {
+		struct Qfunction *qfunc = qfunc_cgenerate(afunc);
+		qfunc_debug_print(qfunc, Outfile);
+		qfunc_free(qfunc);
 	}
-	ast_free(rt);
-	fclose(Outfile);
+	afunc_free(afunc);
 	return (0);
 }

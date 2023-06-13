@@ -347,11 +347,13 @@ static struct ASTnode* statement(void) {
 
 // Parse one top-level function
 // Sets the func_name param.
-static struct ASTnode* function(char **func_name) {
+static struct Afunction* function() {
+	struct Afunction *res = afunc_make();
+
 	match(T_INT);
 	expect(T_ID);
-	*func_name = current()->val_s;	// transfer ownership of the identifier string to caller
-	current()->val_s = NULL;	// prevent it from being freed in token_free() called by next.
+	res->name = current()->val_s;	// transfer ownership of the identifier string to caller
+	current()->val_s = NULL;	// prevent it from being freed in token_free() called by next().
 	next();
 
 	match(T_LP);
@@ -359,20 +361,19 @@ static struct ASTnode* function(char **func_name) {
 		next();
 		goto END_PARAM_LIST;
 	}
-	// TODO: param list
+	// TODO: parameter list
 
 END_PARAM_LIST:
 	match(T_RP);
-	return (block());
+	res->rt = block();
+	return (res);
 }
 
 // Parse ans return the full ast
-struct ASTnode* parse(const char *name) {
-	Tokens = scan_tokens(name);
-	char *func_name;
-	struct ASTnode* res = function(&func_name);
+struct Afunction* parse_source(const char *filename) {
+	Tokens = scan_tokens(filename);
+	struct Afunction* res = function();
 
-	free(func_name);
 	while (Tokens.length > 0) {
 		token_free(llist_popfront(&Tokens));
 	}

@@ -3,6 +3,6 @@
 
 #include "util/linklist.h"
 
-struct linklist scan_tokens(const char *name);
+struct linklist scan_tokens(const char *filename);
 
 #endif

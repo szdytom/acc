@@ -19,28 +19,32 @@ enum {
 
 extern const char *ast_opname[31];
 
+#ifndef ACC_ASTnode_SHARED_FIELDS
+
 // AST structure field shared by all types 
-// llist_node *n	: for linklist
+// llist_node *n	: linklist header
 // int op		: node operation
-#define ASTnode_SHARED_FIELDS \
+#define ACC_ASTnode_SHARED_FIELDS \
 	struct llist_node n; \
 	int op;
 
+#endif
+
 // AST structure (common)
 struct ASTnode {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 };
 
 // AST binary operation node
 struct ASTbinnode {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	struct ASTnode *left;
 	struct ASTnode *right;
 };
 
 // AST if statement node
 struct ASTifnode {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	struct ASTnode *left;	// condition true branch
 	struct ASTnode *right;	// condition false branch
 	struct ASTnode *cond;
@@ -48,40 +52,50 @@ struct ASTifnode {
 
 // AST unary operation node
 struct ASTunnode {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	struct ASTnode *left;
 };
 
 // AST block node
 struct ASTblocknode {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	struct linklist st; // statements linklist
 };
 
 // AST integer literal (32bit) node
 struct ASTi32node {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	int32_t val;
 };
 
 // AST integer literal (64bit) node
 struct ASTi64node {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	int64_t val;
 };
 
 // AST assign literal node
 struct ASTassignnode {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	struct ASTnode* left;
 	struct ASTnode* right;
 };
 
 // AST variable value node
 struct ASTvarnode {
-	ASTnode_SHARED_FIELDS 
+	ACC_ASTnode_SHARED_FIELDS 
 	int id;
 };
+
+// A function with its AST root.
+// TODO: parameters
+struct Afunction {
+	struct llist_node n;	// linklist header
+	char *name;		// function name
+	struct ASTnode *rt;	// AST root
+};
+
+struct Afunction* afunc_make();
 
 struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *right);
 struct ASTnode* ast_make_lit_i32(int32_t x);
@@ -91,6 +105,11 @@ struct ASTnode* ast_make_block();
 struct ASTnode* ast_make_var(int id);
 struct ASTnode* ast_make_assign(int op, struct ASTnode *left, struct ASTnode *right);
 struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond);
+
+void ast_debug_print(FILE *Outfile, struct ASTnode *rt);
+void afunc_debug_print(FILE *Outfile, struct Afunction *f);
+
+void afunc_free(struct Afunction *f);
 void ast_free(struct ASTnode *x);
 
 #endif

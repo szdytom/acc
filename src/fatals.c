@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "scan.h"
+#include "ast.h"
+#include "quad.h"
 
 void fail_target(const char *target_name) {
 	fprintf(stderr, "unknown target: %s.\n", target_name);
@@ -20,9 +22,24 @@ void* malloc_or_fail(size_t s, const char *func_name) {
 	return (res);
 }
 
+void fail_quad_op(int op, const char *func_name) {
+	if (op < Q_NULL) {
+		fprintf(stderr, "%s: unsupported Quad operator %s.\n", func_name, ast_opname[op]);
+		exit(1);
+	} else {
+		fprintf(stderr, "%s: unknown Quad operator %d.\n", func_name, op);
+		exit(1);
+	}
+}
+
 void fail_ast_op(int op, const char *func_name) {
-	fprintf(stderr, "%s: unknown ast operator %d.\n", func_name, op);
-	exit(1);
+	if (op < A_SOUL) {
+		fprintf(stderr, "%s: unsupported AST operator %s.\n", func_name, ast_opname[op]);
+		exit(1);
+	} else {
+		fprintf(stderr, "%s: unknown AST operator %d.\n", func_name, op);
+		exit(1);
+	}
 }
 
 void fail_ce_expect(int line, const char *expected, const char *got) {

@@ -3,7 +3,9 @@
 
 // Target types
 enum {
-	TARGET_AST
+	TARGET_AST,
+	TARGET_QUAD,
+	TARGET_NULL,
 };
 
 int target_parse(const char *target_string);

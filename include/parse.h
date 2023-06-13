@@ -1,6 +1,6 @@
 #ifndef ACC_PARSE_H
 #define ACC_PARSE_H
 
-struct ASTnode* parse(const char *name);
+struct Afunction* parse_source(const char *filename);
 
 #endif
