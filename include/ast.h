@@ -1,6 +1,7 @@
 #ifndef ACC_AST_H
 #define ACC_AST_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include "util/linklist.h"
 
@@ -113,6 +114,9 @@ void afunc_debug_print(FILE *Outfile, struct Afunction *f);
 
 void afunc_free(struct Afunction *f);
 void ast_free(struct ASTnode *x);
+
+// Parse source into AST.
+struct Afunction* Afunction_from_source(const char *filename);
 
 #endif
 

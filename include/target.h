@@ -4,7 +4,7 @@
 // Target types
 enum {
 	TARGET_AST,
-	TARGET_QUAD,
+	TARGET_ACIR,
 	TARGET_NULL,
 };
 

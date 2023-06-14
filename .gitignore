@@ -47,4 +47,8 @@ out.txt
 
 # builder
 .xmake/
+.cache/
 build/
+
+# Language Server
+compile_commands.json

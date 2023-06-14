@@ -89,8 +89,8 @@ void llist_insert(struct linklist *l, int index, void *val) {
 	p->nxt = x;
 }
 
-// Pop the first element of the link list
-// Return the first element.
+// Pop the first element of the link list.
+// Returns the first element.
 void* llist_popfront(struct linklist *l) {
 	if (l->head == NULL) {
 		return (NULL);

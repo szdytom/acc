@@ -71,7 +71,7 @@ static char* scan_indentifier(int *n) {
 	while (isdigit(c) || isalpha(c) || c == '_') {
 		if (len >= sz - 1) {
 			sz *= 2;
-			char *res = realloc(res, sz * sizeof(char));
+			res = realloc(res, sz * sizeof(char));
 			if (res == NULL) {
 				fail_malloc(__FUNCTION__);
 			}

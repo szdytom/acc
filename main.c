@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "scan.h"
-#include "parse.h"
 #include "ast.h"
 #include "target.h"
-#include "quad.h"
+#include "acir.h"
 
 // Print out a usage if started incorrectly
 static void usage(char *prog) {
@@ -36,13 +35,13 @@ int main(int argc, char *argv[]) {
 	}
 
 	int target = target_parse(argv[1]);
-	struct Afunction *afunc = parse_source(argv[2]);
+	struct Afunction *afunc = Afunction_from_source(argv[2]);
 	if (target == TARGET_AST) {
 		afunc_debug_print(Outfile, afunc);
-	} else if (target == TARGET_QUAD) {
-		struct Qfunction *qfunc = qfunc_cgenerate(afunc);
-		qfunc_debug_print(qfunc, Outfile);
-		qfunc_free(qfunc);
+	} else if (target == TARGET_ACIR) {
+		struct IRfunction *ir = IRfunction_from_ast(afunc);
+		IRfunction_print(ir, Outfile);
+		IRfunction_free(ir);
 	}
 	afunc_free(afunc);
 	return (0);

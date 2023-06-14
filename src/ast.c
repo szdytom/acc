@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "ast.h"
 #include "fatals.h"
+#include "util/misc.h"
 #include "util/linklist.h"
 
 const char *ast_opname[] = {
@@ -105,6 +106,7 @@ static void ast_print_dfs(FILE* Outfile, struct ASTnode *x, int tabs) {
 	}
 
 	switch(x->op) {
+		case A_LNOT: case A_BNOT: case A_NEG:
 		case A_RETURN: case A_PRINT: {
 			struct ASTunnode *t = (struct ASTunnode*)x;
 			fprintf(Outfile, "--->UNOP(%s)\n", ast_opname[x->op]);
@@ -179,7 +181,7 @@ void ast_free(struct ASTnode *x) {
 	switch (x->op) {
 		case A_IF: {
 			ast_free(((struct ASTifnode*)x)->cond);
-		}	[[fallthrough]];
+		}	// fall through
 
 		case A_ASSIGN:
 		case A_ADD: case A_SUB: case A_MUL: case A_DIV:

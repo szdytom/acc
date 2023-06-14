@@ -6,14 +6,14 @@
 // Parse the target string
 int target_parse(const char *target_string) {
 	static const char *target_map_k[] = {
-		"ast",
-		"quad",
+		"_ast",
+		"_acir",
 		NULL
 	};
 
 	static const int target_map_v[] = {
 		TARGET_AST,
-		TARGET_QUAD,
+		TARGET_ACIR,
 	};
 
 	for (int i = 0; target_map_k[i]; ++i) {

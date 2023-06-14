@@ -15,7 +15,7 @@ target("build")
 	add_includedirs("include/")
 	if is_mode("release") then
 		set_strip("all")
-		set_optimize("O2")
+		set_optimize("faster")
 	end
 
 	if is_mode("debug") then
