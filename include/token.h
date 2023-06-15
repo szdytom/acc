@@ -29,7 +29,7 @@ enum {
 	T_EQ, T_NE, T_LT, T_GT, T_LE, T_GE,	// == != < > <= >=
 	T_INT, T_VOID, T_CHAR, T_LONG,		// int void char long
 	T_SHORT,				// short
-	T_PRINT, T_IF, T_ELSE,			// print if else
+	T_IF, T_ELSE,				// if else
 	T_WHILE, T_FOR,				// while for
 	T_RETURN,				// return
 	T_I16_LIT, T_I32_LIT, T_I64_LIT,

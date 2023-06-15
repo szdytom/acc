@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include "vtype.h"
 #include "util/linklist.h"
 
 // AST operation types
@@ -22,16 +23,14 @@ enum {
 
 extern const char *ast_opname[31];
 
-#ifndef ACC_ASTnode_SHARED_FIELDS
-
 // AST structure field shared by all types 
 // llist_node *n	: linklist header
+// struct VType type	: value type
 // int op		: node operation
-#define ACC_ASTnode_SHARED_FIELDS \
-	struct llist_node n; \
+#define ACC_ASTnode_SHARED_FIELDS	\
+	struct llist_node n;		\
+	struct VType type;		\
 	int op;
-
-#endif
 
 // AST structure (common)
 struct ASTnode {
@@ -103,7 +102,7 @@ struct Afunction* Afunction_new();
 struct ASTnode* ASTbinnode_new(int op, struct ASTnode *left, struct ASTnode *right);
 struct ASTnode* ASTi32node_new(int32_t x);
 struct ASTnode* ASTi64node_new(int64_t x);
-struct ASTnode* ASTunnode_new(int op, struct ASTnode *c);
+struct ASTnode* ASTunnode_new(int op, struct ASTnode *c, int line);
 struct ASTnode* ASTblocknode_new();
 struct ASTnode* ASTvarnode_new(int id);
 struct ASTnode* ASTassignnode_new(int op, struct ASTnode *left, struct ASTnode *right);

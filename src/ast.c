@@ -21,61 +21,71 @@ const char *ast_opname[] = {
 
 // Constructs a binary AST node
 struct ASTnode* ASTbinnode_new(int op, struct ASTnode *left, struct ASTnode *right) {
-	struct ASTbinnode *x = try_malloc(sizeof(struct ASTbinnode), __FUNCTION__);
+	struct ASTbinnode *self = try_malloc(sizeof(struct ASTbinnode), __FUNCTION__);
 
-	x->op = op;
-	x->left = left;
-	x->right = right;
-	return ((struct ASTnode*)x);
+	VType_init(&self->type);
+	self->type.bt = VT_VOID; // FIXME: calculate the correct type.
+	self->op = op;
+	self->left = left;
+	self->right = right;
+	return ((void*)self);
 }
 
 // Make an AST integer literal (32bits) node
 struct ASTnode* ASTi32node_new(int32_t v) {
-	struct ASTi32node *x = try_malloc(sizeof(struct ASTi32node), __FUNCTION__);
+	struct ASTi32node *self = try_malloc(sizeof(struct ASTi32node), __FUNCTION__);
 
-	x->op = A_LIT_I32;
-	x->val = v;
-	return ((struct ASTnode*)x);
+	VType_init(&self->type);
+	self->type.bt = VT_I32;
+	self->op = A_LIT_I32;
+	self->val = v;
+	return ((void*)self);
 }
 
 // Make an AST integer literal (64bits) node
 struct ASTnode* ASTi64node_new(int64_t v) {
-	struct ASTi64node *x = try_malloc(sizeof(struct ASTi64node), __FUNCTION__);
+	struct ASTi64node *self = try_malloc(sizeof(struct ASTi64node), __FUNCTION__);
 
-	x->op = A_LIT_I64;
-	x->val = v;
-	return ((struct ASTnode*)x);
+	VType_init(&self->type);
+	self->type.bt = VT_I64;
+	self->op = A_LIT_I64;
+	self->val = v;
+	return ((void*)self);
 }
 
 // Make an AST variable value node
 struct ASTnode* ASTvarnode_new(int id) {
-	struct ASTvarnode *x = try_malloc(sizeof(struct ASTvarnode), __FUNCTION__);
+	fail_todo(__FUNCTION__);
+	struct ASTvarnode *self = try_malloc(sizeof(struct ASTvarnode), __FUNCTION__);
 
-	x->op = A_VAR;
-	x->id = id;
-	return ((struct ASTnode*)x);
+	self->op = A_VAR;
+	self->id = id;
+	return ((void*)self);
 }
 
-// Make a unary AST node: only one child
-struct ASTnode* ASTunnode_new(int op, struct ASTnode *child) {
-	struct ASTunnode *x = try_malloc(sizeof(struct ASTunnode), __FUNCTION__);
+// Constructs a unary AST node: only one child.
+struct ASTnode* ASTunnode_new(int op, struct ASTnode *child, int line) {
+	struct ASTunnode *self = try_malloc(sizeof(struct ASTunnode), __FUNCTION__);
 
-	x->op = op;
-	x->left = child;
-	return ((struct ASTnode*)x);
+	VType_unary(&child->type, op, &self->type, line);
+	self->op = op;
+	self->left = child;
+	return ((void*)self);
 }
 
 // Make a block ast node
 struct ASTnode* ASTblocknode_new() {
-	struct ASTblocknode *x = try_malloc(sizeof(struct ASTblocknode), __FUNCTION__);
+	struct ASTblocknode *self = try_malloc(sizeof(struct ASTblocknode), __FUNCTION__);
 
-	x->op = A_BLOCK;
-	llist_init(&x->st);
-	return ((struct ASTnode*)x);
+	VType_init(&self->type);
+	self->op = A_BLOCK;
+	llist_init(&self->st);
+	return ((void*)self);
 }
 
 // Make a assignment ast node
 struct ASTnode* ASTassignnode_new(int op, struct ASTnode *left, struct ASTnode *right) {
+	fail_todo(__FUNCTION__);
 	struct ASTassignnode *x = try_malloc(sizeof(struct ASTassignnode), __FUNCTION__);
 
 	x->op = op;
@@ -86,13 +96,14 @@ struct ASTnode* ASTassignnode_new(int op, struct ASTnode *left, struct ASTnode *
 
 // Make a if statement ast node
 struct ASTnode* ASTifnode_new(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond) {
+	fail_todo(__FUNCTION__);
 	struct ASTifnode *x = try_malloc(sizeof(struct ASTifnode), __FUNCTION__);
 
 	x->op = A_IF;
 	x->left = left;
 	x->right = right;
 	x->cond = cond;
-	return ((struct ASTnode*)x);
+	return ((void*)x);
 }
 
 static void ast_print_dfs(FILE* Outfile, struct ASTnode *x, int tabs) {

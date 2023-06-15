@@ -11,6 +11,7 @@
 struct Pcontext {
 	struct linklist tokens;	// token list
 	struct llist_node *cur;	// current token
+	struct VType func_type;	// current function return type
 };
 
 // Checks that we have a binary operator and return its precedence.
@@ -180,7 +181,7 @@ static struct ASTnode* prefixed_primary(struct Pcontext *ctx) {
 	if (is_prefix_op(t->type)) {
 		next(ctx);
 		struct ASTnode *child = prefixed_primary(ctx);
-		return (ASTunnode_new(unary_arithop(t), child));
+		return (ASTunnode_new(unary_arithop(t), child, t->line));
 	}
 
 	return (primary(ctx));
@@ -263,14 +264,6 @@ static struct ASTnode* expression(struct Pcontext *ctx) {
 	return (binexpr(ctx, 0));
 }
 
-// parse one print statement
-static struct ASTnode* print_statement(struct Pcontext *ctx) {
-	match(ctx, T_PRINT);
-	struct ASTnode *res = ASTunnode_new(A_PRINT, expression(ctx));
-	match(ctx, T_SEMI);
-	return (res);
-}
-
 /*
 // parse variable declaration statement
 static struct ASTnode* var_declaration(void) {
@@ -325,7 +318,7 @@ static struct ASTnode* for_statement(struct Pcontext *ctx) {
 	} else {
 		cond = ASTi32node_new(1);
 	}
-	next(ctx); // skip the ;
+	match(ctx, T_SEMI);
 
 	struct ASTnode *inc;
 	if (current(ctx)->type != T_RP) {
@@ -361,7 +354,7 @@ static struct ASTnode* return_statement(struct Pcontext *ctx) {
 	match(ctx, T_RETURN);
 	struct ASTnode *res = expression(ctx);
 	match(ctx, T_SEMI);
-	return (ASTunnode_new(A_RETURN, res));
+	return (ASTunnode_new(A_RETURN, res, current(ctx)->line));
 }
 
 // parse one statement
@@ -372,9 +365,6 @@ static struct ASTnode* statement(struct Pcontext *ctx) {
 
 		case T_SEMI:
 			return (NULL);
-
-		case T_PRINT:
-			return (print_statement(ctx));
 
 //		case T_INT:
 //			return (var_declaration());
@@ -398,15 +388,45 @@ static struct ASTnode* statement(struct Pcontext *ctx) {
 	}
 }
 
+static bool parse_type(struct VType *self, struct Pcontext *ctx, bool ce) {
+	struct token *t = current(ctx);
+	switch (t->type) {
+		case T_INT: {
+			self->bt = VT_I32;
+			next(ctx);
+		}	break;
+
+		case T_VOID: {
+			self->bt = VT_VOID;
+			next(ctx);
+		}	break;
+
+		case T_LONG: {
+			self->bt = VT_I64;
+			next(ctx);
+		}	break;
+
+		default: {
+			if (ce) {
+				fail_ce_expect(t->line, "a typename or type classifier", token_typename[t->type]);
+			} else {
+				return (false);
+			}
+		}
+	}
+
+	return (true);
+}
+
 // Parse one top-level function
 // Sets the func_name param.
 static struct Afunction* function(struct Pcontext *ctx) {
 	struct Afunction *res = Afunction_new();
 
-	match(ctx, T_INT);
+	parse_type(&ctx->func_type, ctx, true);
 	expect(ctx, T_ID);
 	res->name = current(ctx)->val_s;	// transfer ownership of the identifier string to caller
-	current(ctx)->val_s = NULL;	// prevent it from being freed in token_free() called by next(ctx).
+	current(ctx)->val_s = NULL;		// prevent it from being freed in token_free() called by next(ctx).
 	next(ctx);
 
 	match(ctx, T_LP);

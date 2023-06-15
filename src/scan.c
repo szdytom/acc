@@ -92,7 +92,6 @@ static char* scan_indentifier(int *n) {
 // Returns true if found keyword.
 static bool scan_keyword(struct token *t, char *s) {
 	static const char *map_s[] = {
-		"print",
 		"int",
 		"void",
 		"long",
@@ -105,7 +104,6 @@ static bool scan_keyword(struct token *t, char *s) {
 	};
 
 	static const int map_t[] = {
-		T_PRINT,
 		T_INT,
 		T_VOID,
 		T_LONG,

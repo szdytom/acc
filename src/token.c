@@ -12,7 +12,7 @@ const char *token_typename[63] = {
 	"==", "!=", "<", ">", "<=", ">=",
 	"int", "void", "char", "long",
 	"short",
-	"print", "if", "else",
+	"if", "else",
 	"while", "for",
 	"return",
 	"a integer literal (16bit)", "a integer literal (32bit)", "a integer literal (64bit)",

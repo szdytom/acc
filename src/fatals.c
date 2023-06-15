@@ -3,6 +3,17 @@
 #include "scan.h"
 #include "ast.h"
 #include "acir.h"
+#include "fatals.h"
+
+void fail_todo(const char *func_name) {
+	fprintf(stderr, "%s: TODO.", func_name);
+	exit(1);
+}
+
+void fail_type(int line) {
+	fprintf(stderr, "sytax error on line %d: incorrect or incomplete type.\n", line);
+	exit(1);
+}
 
 void fail_target(const char *target_name) {
 	fprintf(stderr, "unknown target: %s.\n", target_name);
