@@ -20,8 +20,8 @@ const char *ast_opname[] = {
 };
 
 // Constructs a binary AST node
-struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *right) {
-	struct ASTbinnode *x = malloc_or_fail(sizeof(struct ASTbinnode), __FUNCTION__);
+struct ASTnode* ASTbinnode_new(int op, struct ASTnode *left, struct ASTnode *right) {
+	struct ASTbinnode *x = try_malloc(sizeof(struct ASTbinnode), __FUNCTION__);
 
 	x->op = op;
 	x->left = left;
@@ -30,8 +30,8 @@ struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *ri
 }
 
 // Make an AST integer literal (32bits) node
-struct ASTnode* ast_make_lit_i32(int32_t v) {
-	struct ASTi32node *x = malloc_or_fail(sizeof(struct ASTi32node), __FUNCTION__);
+struct ASTnode* ASTi32node_new(int32_t v) {
+	struct ASTi32node *x = try_malloc(sizeof(struct ASTi32node), __FUNCTION__);
 
 	x->op = A_LIT_I32;
 	x->val = v;
@@ -39,8 +39,8 @@ struct ASTnode* ast_make_lit_i32(int32_t v) {
 }
 
 // Make an AST integer literal (64bits) node
-struct ASTnode* ast_make_lit_i64(int64_t v) {
-	struct ASTi64node *x = malloc_or_fail(sizeof(struct ASTi64node), __FUNCTION__);
+struct ASTnode* ASTi64node_new(int64_t v) {
+	struct ASTi64node *x = try_malloc(sizeof(struct ASTi64node), __FUNCTION__);
 
 	x->op = A_LIT_I64;
 	x->val = v;
@@ -48,8 +48,8 @@ struct ASTnode* ast_make_lit_i64(int64_t v) {
 }
 
 // Make an AST variable value node
-struct ASTnode* ast_make_var(int id) {
-	struct ASTvarnode *x = malloc_or_fail(sizeof(struct ASTvarnode), __FUNCTION__);
+struct ASTnode* ASTvarnode_new(int id) {
+	struct ASTvarnode *x = try_malloc(sizeof(struct ASTvarnode), __FUNCTION__);
 
 	x->op = A_VAR;
 	x->id = id;
@@ -57,8 +57,8 @@ struct ASTnode* ast_make_var(int id) {
 }
 
 // Make a unary AST node: only one child
-struct ASTnode* ast_make_unary(int op, struct ASTnode *child) {
-	struct ASTunnode *x = malloc_or_fail(sizeof(struct ASTunnode), __FUNCTION__);
+struct ASTnode* ASTunnode_new(int op, struct ASTnode *child) {
+	struct ASTunnode *x = try_malloc(sizeof(struct ASTunnode), __FUNCTION__);
 
 	x->op = op;
 	x->left = child;
@@ -66,8 +66,8 @@ struct ASTnode* ast_make_unary(int op, struct ASTnode *child) {
 }
 
 // Make a block ast node
-struct ASTnode* ast_make_block() {
-	struct ASTblocknode *x = malloc_or_fail(sizeof(struct ASTblocknode), __FUNCTION__);
+struct ASTnode* ASTblocknode_new() {
+	struct ASTblocknode *x = try_malloc(sizeof(struct ASTblocknode), __FUNCTION__);
 
 	x->op = A_BLOCK;
 	llist_init(&x->st);
@@ -75,8 +75,8 @@ struct ASTnode* ast_make_block() {
 }
 
 // Make a assignment ast node
-struct ASTnode* ast_make_assign(int op, struct ASTnode *left, struct ASTnode *right) {
-	struct ASTassignnode *x = malloc_or_fail(sizeof(struct ASTassignnode), __FUNCTION__);
+struct ASTnode* ASTassignnode_new(int op, struct ASTnode *left, struct ASTnode *right) {
+	struct ASTassignnode *x = try_malloc(sizeof(struct ASTassignnode), __FUNCTION__);
 
 	x->op = op;
 	x->left = left;
@@ -85,8 +85,8 @@ struct ASTnode* ast_make_assign(int op, struct ASTnode *left, struct ASTnode *ri
 }
 
 // Make a if statement ast node
-struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond) {
-	struct ASTifnode *x = malloc_or_fail(sizeof(struct ASTifnode), __FUNCTION__);
+struct ASTnode* ASTifnode_new(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond) {
+	struct ASTifnode *x = try_malloc(sizeof(struct ASTifnode), __FUNCTION__);
 
 	x->op = A_IF;
 	x->left = left;
@@ -140,19 +140,19 @@ static void ast_print_dfs(FILE* Outfile, struct ASTnode *x, int tabs) {
 }
 
 // Prints the structure of a AST into Outfile.
-void ast_debug_print(FILE *Outfile, struct ASTnode *rt) {
+void ASTnode_print(FILE *Outfile, struct ASTnode *rt) {
 	ast_print_dfs(Outfile, rt, 0);
 }
 
 // Prints the structure of a Afunction into Outfile.
-void afunc_debug_print(FILE *Outfile, struct Afunction *f) {
+void Afunction_print(FILE *Outfile, struct Afunction *f) {
 	fprintf(Outfile, "FUNCTION %s: \n", f->name);
 	ast_print_dfs(Outfile, f->rt, 0);
 }
 
 // Constructs a Afunction.
-struct Afunction* afunc_make() {
-	struct Afunction *res = (struct Afunction*)malloc_or_fail(sizeof(struct Afunction), __FUNCTION__);
+struct Afunction* Afunction_new() {
+	struct Afunction *res = (void*)try_malloc(sizeof(struct Afunction), __FUNCTION__);
 
 	res->rt = NULL;
 	res->name = NULL;
@@ -160,50 +160,50 @@ struct Afunction* afunc_make() {
 }
 
 // Frees a Afunction and all its components.
-void afunc_free(struct Afunction *f) {
+void Afunction_free(struct Afunction *f) {
 	if (f->name) {
 		free(f->name);
 	}
 
 	if (f->rt) {
-		ast_free(f->rt);
+		ASTnode_free(f->rt);
 	}
 
 	free(f);
 }
 
 // Frees an AST's memory, including its childs.
-void ast_free(struct ASTnode *x) {
+void ASTnode_free(struct ASTnode *x) {
 	if (x == NULL) {
 		return;
 	}
 
 	switch (x->op) {
 		case A_IF: {
-			ast_free(((struct ASTifnode*)x)->cond);
+			ASTnode_free(((struct ASTifnode*)x)->cond);
 		}	// fall through
 
 		case A_ASSIGN:
 		case A_ADD: case A_SUB: case A_MUL: case A_DIV:
 		case A_EQ: case A_NE: case A_GT: case A_LT: case A_GE: case A_LE:
 		case A_WHILE: {
-			struct ASTbinnode *t = (struct ASTbinnode*)x;
-			ast_free(t->left);
-			ast_free(t->right);
+			struct ASTbinnode *t = (void*)x;
+			ASTnode_free(t->left);
+			ASTnode_free(t->right);
 		}	break;
 
 		case A_PRINT: case A_RETURN:
 		case A_LNOT: case A_BNOT: case A_NEG: {
-			struct ASTunnode *t = (struct ASTunnode*)x;
-			ast_free(t->left);
+			struct ASTunnode *t = (void*)x;
+			ASTnode_free(t->left);
 		}	break;
 
 		case A_BLOCK: {
-			struct ASTblocknode *t = (struct ASTblocknode*)x;
+			struct ASTblocknode *t = (void*)x;
 			struct llist_node *p = t->st.head, *nxt;
 			while (p) {
 				nxt = p->nxt;
-				ast_free((struct ASTnode*)p);
+				ASTnode_free((void*)p);
 				p = nxt;
 			}
 		}	break;

@@ -37,12 +37,12 @@ int main(int argc, char *argv[]) {
 	int target = target_parse(argv[1]);
 	struct Afunction *afunc = Afunction_from_source(argv[2]);
 	if (target == TARGET_AST) {
-		afunc_debug_print(Outfile, afunc);
+		Afunction_print(Outfile, afunc);
 	} else if (target == TARGET_ACIR) {
 		struct IRfunction *ir = IRfunction_from_ast(afunc);
 		IRfunction_print(ir, Outfile);
 		IRfunction_free(ir);
 	}
-	afunc_free(afunc);
+	Afunction_free(afunc);
 	return (0);
 }

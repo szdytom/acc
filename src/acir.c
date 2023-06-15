@@ -4,10 +4,10 @@
 #include "acir.h"
 
 #define IRinstruction_constructor_shared_code \
-	struct IRinstruction *self = malloc_or_fail(sizeof(struct IRinstruction), __FUNCTION__);	\
-	self->id = IRfunction_alloc_ins(owner->owner);							\
-	self->owner = owner;										\
-	IRblock_add_ins(owner, self);									\
+	struct IRinstruction *self = try_malloc(sizeof(struct IRinstruction), __FUNCTION__);	\
+	self->id = IRfunction_alloc_ins(owner->owner);						\
+	self->owner = owner;									\
+	IRblock_add_ins(owner, self);								\
 
 // Adds one instruction to list.
 // Internal function only: IRinstruction_new_xxx() automaticly calls this function.
@@ -87,7 +87,7 @@ bool IRis_jmp(int op) {
 
 // Constructs a IRblock.
 struct IRblock* IRblock_new(struct IRfunction *owner) {
-	struct IRblock *self = malloc_or_fail(sizeof(struct IRblock), __FUNCTION__);
+	struct IRblock *self = try_malloc(sizeof(struct IRblock), __FUNCTION__);
 
 	self->id = owner->bs.length;
 	self->owner = owner;
@@ -162,7 +162,7 @@ static struct IRinstruction* IRcg_dfs(struct ASTnode *x, struct IRfunction *f, s
 
 // Generates Quad Repersentation from an AST
 struct IRfunction* IRfunction_from_ast(struct Afunction *afunc) {
-	struct IRfunction *self = malloc_or_fail(sizeof(struct IRfunction), __FUNCTION__);
+	struct IRfunction *self = try_malloc(sizeof(struct IRfunction), __FUNCTION__);
 
 	self->name = afunc->name;	// transfer ownership of function name string
 	afunc->name = NULL;		// prevents the pointer being freed when freeing the Afunction

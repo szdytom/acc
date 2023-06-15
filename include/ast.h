@@ -98,22 +98,22 @@ struct Afunction {
 	struct ASTnode *rt;	// AST root
 };
 
-struct Afunction* afunc_make();
+struct Afunction* Afunction_new();
 
-struct ASTnode* ast_make_binary(int op, struct ASTnode *left, struct ASTnode *right);
-struct ASTnode* ast_make_lit_i32(int32_t x);
-struct ASTnode* ast_make_lit_i64(int64_t x);
-struct ASTnode* ast_make_unary(int op, struct ASTnode *c);
-struct ASTnode* ast_make_block();
-struct ASTnode* ast_make_var(int id);
-struct ASTnode* ast_make_assign(int op, struct ASTnode *left, struct ASTnode *right);
-struct ASTnode* ast_make_if(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond);
+struct ASTnode* ASTbinnode_new(int op, struct ASTnode *left, struct ASTnode *right);
+struct ASTnode* ASTi32node_new(int32_t x);
+struct ASTnode* ASTi64node_new(int64_t x);
+struct ASTnode* ASTunnode_new(int op, struct ASTnode *c);
+struct ASTnode* ASTblocknode_new();
+struct ASTnode* ASTvarnode_new(int id);
+struct ASTnode* ASTassignnode_new(int op, struct ASTnode *left, struct ASTnode *right);
+struct ASTnode* ASTifnode_new(struct ASTnode *left, struct ASTnode *right, struct ASTnode *cond);
 
-void ast_debug_print(FILE *Outfile, struct ASTnode *rt);
-void afunc_debug_print(FILE *Outfile, struct Afunction *f);
+void ASTnode_print(FILE *Outfile, struct ASTnode *rt);
+void Afunction_print(FILE *Outfile, struct Afunction *f);
 
-void afunc_free(struct Afunction *f);
-void ast_free(struct ASTnode *x);
+void Afunction_free(struct Afunction *f);
+void ASTnode_free(struct ASTnode *x);
 
 // Parse source into AST.
 struct Afunction* Afunction_from_source(const char *filename);

@@ -5,7 +5,7 @@
 
 // This function tries to malloc some memory.
 // Will call fail_malloc() in fatals.h when failing.
-void* malloc_or_fail(size_t s, const char *func_name) {
+void* try_malloc(size_t s, const char *func_name) {
 	void *res = malloc(s);
 	if (res == NULL) {
 		fail_malloc(func_name);

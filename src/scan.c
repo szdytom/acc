@@ -64,7 +64,7 @@ static void scan_int(struct token *t) {
 static char* scan_indentifier(int *n) {
 	int sz = 128, len = 0;
 
-	char *res = malloc_or_fail(sz * sizeof(char), __FUNCTION__);
+	char *res = try_malloc(sz * sizeof(char), __FUNCTION__);
 	memset(res, 0, sz * sizeof(char));
 
 	int c = preview();
@@ -157,7 +157,7 @@ static bool scan_1c(struct token *t) {
 static struct token* scan(void) {
 	skip_whitespaces();
 
-	struct token *t = malloc_or_fail(sizeof(struct token), __FUNCTION__);
+	struct token *t = try_malloc(sizeof(struct token), __FUNCTION__);
 	t->line = Line;
 
 	int c = preview();

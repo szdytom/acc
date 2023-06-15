@@ -139,10 +139,10 @@ static struct ASTnode* primary(struct Pcontext *ctx) {
 		res = expression(ctx);
 		match(ctx, T_RP);
 	} else if (t->type == T_I32_LIT) {
-		res = ast_make_lit_i32(t->val_i32);
+		res = ASTi32node_new(t->val_i32);
 		next(ctx);
 	} else if (t->type == T_I64_LIT) {
-		res = ast_make_lit_i64(current(ctx)->val_i64);
+		res = ASTi64node_new(current(ctx)->val_i64);
 		next(ctx);
 	} else if (t->type == T_ID) {
 		// TODO: identifier.
@@ -154,7 +154,7 @@ static struct ASTnode* primary(struct Pcontext *ctx) {
 			exit(1);
 		}
 		next(ctx);
-		return (ast_make_var(id));
+		return (ASTvarnode_new(id));
 		*/
 	} else {
 		fail_ce(t->line, "primary expression expected");
@@ -180,7 +180,7 @@ static struct ASTnode* prefixed_primary(struct Pcontext *ctx) {
 	if (is_prefix_op(t->type)) {
 		next(ctx);
 		struct ASTnode *child = prefixed_primary(ctx);
-		return (ast_make_unary(unary_arithop(t), child));
+		return (ASTunnode_new(unary_arithop(t), child));
 	}
 
 	return (primary(ctx));
@@ -217,10 +217,10 @@ static struct ASTnode* binexpr(struct Pcontext *ctx, int precedence) {
 
 		if (direction_rtl(op->type)) {
 			right = binexpr(ctx, precedence);
-			left = ast_make_assign(binary_arithop(op), left, right);
+			left = ASTassignnode_new(binary_arithop(op), left, right);
 		} else {
 			right = binexpr(ctx, tp);
-			left = ast_make_binary(binary_arithop(op), left, right); // join right into left
+			left = ASTbinnode_new(binary_arithop(op), left, right); // join right into left
 		}
 
 		op = current(ctx);
@@ -240,7 +240,7 @@ static struct ASTnode* block(struct Pcontext *ctx) {
 		return (NULL);
 	}
 
-	struct ASTblocknode* res = (struct ASTblocknode*)ast_make_block();
+	struct ASTblocknode* res = (struct ASTblocknode*)ASTblocknode_new();
 	while (current(ctx)->type != T_RB) {
 		struct ASTnode *x;
 		x = statement(ctx);
@@ -266,7 +266,7 @@ static struct ASTnode* expression(struct Pcontext *ctx) {
 // parse one print statement
 static struct ASTnode* print_statement(struct Pcontext *ctx) {
 	match(ctx, T_PRINT);
-	struct ASTnode *res = ast_make_unary(A_PRINT, expression(ctx));
+	struct ASTnode *res = ASTunnode_new(A_PRINT, expression(ctx));
 	match(ctx, T_SEMI);
 	return (res);
 }
@@ -300,7 +300,7 @@ static struct ASTnode* if_statement(struct Pcontext *ctx) {
 	} else {
 		else_then = NULL; // empty block
 	}
-	return (ast_make_if(then, else_then, cond));
+	return (ASTifnode_new(then, else_then, cond));
 }
 
 // parse an while statement
@@ -310,7 +310,7 @@ static struct ASTnode* while_statement(struct Pcontext *ctx) {
 	struct ASTnode* cond = expression(ctx);
 	match(ctx, T_RP);
 	struct ASTnode* body = statement(ctx);
-	return (ast_make_binary(A_WHILE, cond, body));
+	return (ASTbinnode_new(A_WHILE, cond, body));
 }
 
 // parse a for statement (into a while loop)
@@ -323,7 +323,7 @@ static struct ASTnode* for_statement(struct Pcontext *ctx) {
 	if (current(ctx)->type != T_SEMI) {
 		cond = expression(ctx);
 	} else {
-		cond = ast_make_lit_i32(1);
+		cond = ASTi32node_new(1);
 	}
 	next(ctx); // skip the ;
 
@@ -336,7 +336,7 @@ static struct ASTnode* for_statement(struct Pcontext *ctx) {
 
 	match(ctx, T_RP);
 	struct ASTnode *body = statement(ctx);
-	struct ASTblocknode *container = (void*)ast_make_block();
+	struct ASTblocknode *container = (void*)ASTblocknode_new();
 	struct ASTnode *wbody;
 
 	if (body == NULL && inc == NULL) {
@@ -346,14 +346,14 @@ static struct ASTnode* for_statement(struct Pcontext *ctx) {
 	} else if (inc == NULL) {
 		wbody = body;
 	} else {
-		struct ASTblocknode* wt = (void*)ast_make_block();
+		struct ASTblocknode* wt = (void*)ASTblocknode_new();
 		llist_pushback_notnull(&wt->st, body);
 		llist_pushback_notnull(&wt->st, inc);
 		wbody = (void*)wt;
 	}
 
 	llist_pushback_notnull(&container->st, init);
-	llist_pushback(&container->st, ast_make_binary(A_WHILE, cond, wbody));
+	llist_pushback(&container->st, ASTbinnode_new(A_WHILE, cond, wbody));
 	return ((void*)container);
 }
 
@@ -361,7 +361,7 @@ static struct ASTnode* return_statement(struct Pcontext *ctx) {
 	match(ctx, T_RETURN);
 	struct ASTnode *res = expression(ctx);
 	match(ctx, T_SEMI);
-	return (ast_make_unary(A_RETURN, res));
+	return (ASTunnode_new(A_RETURN, res));
 }
 
 // parse one statement
@@ -401,7 +401,7 @@ static struct ASTnode* statement(struct Pcontext *ctx) {
 // Parse one top-level function
 // Sets the func_name param.
 static struct Afunction* function(struct Pcontext *ctx) {
-	struct Afunction *res = afunc_make();
+	struct Afunction *res = Afunction_new();
 
 	match(ctx, T_INT);
 	expect(ctx, T_ID);
