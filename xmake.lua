@@ -1,5 +1,5 @@
 set_project("acc")
-set_version("0.1a1")
+set_version("0.1.1")
 set_basename("acc")
 set_languages("c11")
 set_targetdir(".")
