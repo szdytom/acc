@@ -4,6 +4,7 @@
 #include "util/critbit.h"
 #include "util/misc.h"
 #include <string.h>
+#include <stdlib.h>
 
 // critbit tree internal node
 struct critbit_intern {
@@ -179,7 +180,7 @@ struct critbit_node *critbit_erase(struct critbit_tree *self, const char *key) {
 	void **wherep = &self->rt;
 	void **whereq = NULL;
 	struct critbit_intern *p = self->rt, *q;
-	const size_t len = strlen(str);
+	const size_t len = strlen(key);
 
 	while (p->type == 0) {
 		whereq = wherep;
@@ -197,10 +198,10 @@ struct critbit_node *critbit_erase(struct critbit_tree *self, const char *key) {
 
 	if (!whereq) {
 		self->rt = NULL;
-		return (p);
+		return ((void*)p);
 	}
 
 	*whereq = q->child[1 - dir];
 	free(q);
-	return (p);
+	return ((void*)p);
 }

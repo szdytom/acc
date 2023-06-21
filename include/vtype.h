@@ -7,8 +7,8 @@
 enum {
 	VT_VOID,	// void
 	VT_BOOL,	// bool
-	VT_I32,		// int32_t
-	VT_I64,		// int64_t
+	VT_I32,		// signed 32 bits integer
+	VT_I64,		// signed 64 bits integer
 
 	// Guard
 	VT_EXCEED
@@ -16,7 +16,7 @@ enum {
 
 // Value type in C.
 struct VType {
-	int bt;		// base type(first class)
+	int bt;		// base type.
 };
 
 // Find out the type after appling the give ast operator(unary arithmetic variant).

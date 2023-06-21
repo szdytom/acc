@@ -10,7 +10,6 @@ struct token {
 	int line;	// token location line number
 	int type;	// token type
 	union {		// hold the value of the literal that we scanned in
-		int16_t val_i16;
 		int32_t val_i32;
 		int64_t val_i64;
 		char *val_s;

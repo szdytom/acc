@@ -10,6 +10,11 @@ void fail_todo(const char *func_name) {
 	exit(1);
 }
 
+void fail_unreachable(const char *func_name) {
+	fprintf(stderr, "%s: Unreachable reached.", func_name);
+	exit(1);
+}
+
 void fail_type(int line) {
 	fprintf(stderr, "sytax error on line %d: incorrect or incomplete type.\n", line);
 	exit(1);

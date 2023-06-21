@@ -5,11 +5,12 @@
 #include "ast.h"
 #include "target.h"
 #include "acir.h"
+#include "util/misc.h"
 
 // Print out a usage if started incorrectly
 static void usage(char *prog) {
 	fprintf(stderr, "ACC the C compiler. built on: %s.\n", __DATE__);
-	fprintf(stderr, "Usage: %s target infile (outfile)\n", prog);
+	fprintf(stderr, "Usage: %s target format infile (outfile)\n", prog);
 	exit(1);
 }
 
@@ -24,21 +25,22 @@ void unload(void) {
 
 int main(int argc, char *argv[]) {
 	atexit(unload);
-	if (argc < 3) {
+	if (argc < 4) {
 		usage(argv[0]);
 	}
 
-	if (argc >= 4) {
-		Outfile = fopen(argv[3], "w");
+	if (argc >= 5) {
+		Outfile = fopen(argv[4], "w");
 	} else {
 		Outfile = stdout;
 	}
 
 	int target = target_parse(argv[1]);
-	struct Afunction *afunc = Afunction_from_source(argv[2]);
-	if (target == TARGET_AST) {
+	Tinfo_load(target);
+	struct Afunction *afunc = Afunction_from_source(argv[3]);
+	if (strequal(argv[2], "_ast")) {
 		Afunction_print(Outfile, afunc);
-	} else if (target == TARGET_ACIR) {
+	} else if (strequal(argv[2], "_ir")) {
 		struct IRfunction *ir = IRfunction_from_ast(afunc);
 		IRfunction_print(ir, Outfile);
 		IRfunction_free(ir);
