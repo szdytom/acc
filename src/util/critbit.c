@@ -4,6 +4,7 @@
 #include "util/critbit.h"
 #include "util/misc.h"
 #include <string.h>
+#include <stddef.h>
 #include <stdlib.h>
 
 // critbit tree internal node
@@ -123,7 +124,7 @@ struct critbit_node* critbit_insert(struct critbit_tree *self, struct critbit_no
 	}
 	return (p);
 
-DIFFER_FOUND:
+DIFFER_FOUND:;
 	size_t new_critbit = differbyte << 3;
 	while ((differbit & 1) == 0) {
 		new_critbit += 1;

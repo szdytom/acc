@@ -2,6 +2,7 @@
 #define ACC_UTIL_MISC_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define ACC_ARRAY_LENGTH(a) (sizeof((a))/sizeof(*(a)))
 
