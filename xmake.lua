@@ -13,6 +13,7 @@ target("build")
 	add_files("src/**.c")
 	add_files("main.c")
 	add_includedirs("include/")
+	add_includedirs("native/standalone/")
 	if is_mode("release") then
 		set_strip("all")
 		set_optimize("faster")
