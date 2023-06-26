@@ -36,4 +36,7 @@ bool VType_ext_eq(const struct VType *x, const struct VType *y);
 // Returns whether the given value types are the same.
 bool VType_eq(const struct VType *x, const struct VType *y);
 
+// Returns whether the given VType is a variant of integer(including bool)
+bool VType_is_int(const struct VType *self);
+
 #endif

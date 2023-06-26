@@ -35,6 +35,7 @@ enum {
 
 // Defination of IR type code, which simplier than VType.
 enum {
+	IRT_UNDEF,	// undefined value
 	IRT_VOID,	// void
 	IRT_I1,		// bool
 	IRT_I32,	// 32bits integer
@@ -88,8 +89,6 @@ struct IRfunction {
 	char *name;			// function name
 	struct linklist bs;		// basic blocks
 	int ins_count;			// number of instructions, used for allocating instruction identifier.
-	struct IRinstruction *null;	// an instruction with a value void, considered to have instruction id 0.
-					// This is used for the null object patern.
 };
 
 // Constructs an IRinstruction with an operator, and two operands.
@@ -100,7 +99,6 @@ struct IRinstruction* IRinstruction_new(struct IRblock *owner, int op, int type,
 struct IRinstruction* IRinstruction_new_i32(struct IRblock *owner, int32_t v);
 
 // Contructs an IRinstruction with an void immediate only.
-// Use IRfunction.null instead of contructing a new void immediate.
 struct IRinstruction* IRinstruction_new_void(struct IRblock *owner);
 
 // Constructs a IRinstuction with instruction IR_JMP or IR_BR (which is conditional jump).

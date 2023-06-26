@@ -76,3 +76,13 @@ bool VType_ext_eq(const struct VType *x, const struct VType *y) {
 bool VType_eq(const struct VType *x, const struct VType *y) {
 	return (x->bt == y->bt);
 }
+
+// Returns whether the given VType is a variant of integer(including bool)
+bool VType_is_int(const struct VType *self) {
+	switch (self->bt) {
+		case VT_BOOL: case VT_I32: case VT_I64:
+			return (true);
+		default:
+			return (false);
+	}
+}

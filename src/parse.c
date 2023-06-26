@@ -11,7 +11,7 @@
 struct Pcontext {
 	struct linklist tokens;	// token list
 	struct llist_node *cur;	// current token
-	struct VType func_type;	// current function return type
+	struct Afunction *func;	// current function
 };
 
 // Checks that we have a binary operator and return its precedence.
@@ -422,8 +422,9 @@ static bool parse_type(struct VType *self, struct Pcontext *ctx, bool ce) {
 // Sets the func_name param.
 static struct Afunction* function(struct Pcontext *ctx) {
 	struct Afunction *res = Afunction_new();
+	ctx->func = res;
 
-	parse_type(&ctx->func_type, ctx, true);
+	parse_type(&res->ret_type, ctx, true);
 	expect(ctx, T_ID);
 	res->name = current(ctx)->val_s;	// transfer ownership of the identifier string to caller
 	current(ctx)->val_s = NULL;		// prevent it from being freed in token_free() called by next(ctx).

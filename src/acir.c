@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <vtype.h>
 #include "util/misc.h"
 #include "fatals.h"
 #include "acir.h"
@@ -44,8 +45,16 @@ struct IRinstruction* IRinstruction_new_i32(struct IRblock *owner, int32_t v) {
 	return (self);
 }
 
+// Contructs an IRinstruction with an undef immediate only.
+struct IRinstruction* IRinstruction_new_undef(struct IRblock *owner) {
+	IRinstruction_constructor_shared_code
+
+	self->op = IR_IMM;
+	self->type = IRT_UNDEF;
+	return (self);
+}
+
 // Contructs an IRinstruction with an void immediate only.
-// Use IRfunction.null instead of contructing a new void immediate.
 struct IRinstruction* IRinstruction_new_void(struct IRblock *owner) {
 	IRinstruction_constructor_shared_code
 
@@ -149,6 +158,7 @@ int IRTypecode_integer_promote(int self) {
 // Returns a string identifier for the given type.
 const char *IRTypecode_stringify(int self) {
 	static const char *map[] = {
+		"undef",
 		"void",
 		"i1",
 		"i32",
@@ -158,6 +168,15 @@ const char *IRTypecode_stringify(int self) {
 	};
 
 	return map[self];
+}
+
+bool IRTypecode_is_int(int self) {
+	switch (self) {
+		case IRT_I1: case IRT_I32: case IRT_I64:
+			return (true);
+		default:
+			return (false);
+	}
 }
 
 // Translate an AST unary arithmetic opcode to a IR opcode.
@@ -186,58 +205,94 @@ const char* IRopcode_stringify(int self) {
 		NULL
 	};
 
-	return map[self];
+	return (map[self]);
 }
 
+struct IRinstruction *IRinstruction_cast(struct IRinstruction *self, const struct VType *vt
+					, struct IRinstruction *undef) {
+	int tc = IRTypecode_from_VType(vt);
+	if (self->type == tc) {
+		return (self);
+	}
+
+	if (self->type == IRT_UNDEF) {
+		return (self);
+	}
+
+	if (self->type == IRT_VOID) {
+		return (undef);
+	}
+
+	if (IRTypecode_is_int(self->type)) {
+		if (!VType_is_int(vt)) {
+			return (undef);
+		}
+
+		struct IRinstruction *pmt = IRinstruction_new(self->owner, IR_SEXT,
+						IRTypecode_integer_promote(self->type), self, NULL);
+		struct IRinstruction *res = IRinstruction_new(self->owner, IR_TRUNC, tc, pmt, NULL);
+		return (res);
+	}
+	fail_todo(__FUNCTION__);
+}
+
+struct cg_context {
+	struct IRblock *b;
+	struct IRfunction *irf;
+	struct Afunction *af;
+	struct IRinstruction *undef;
+};
+
 // DFS on an AST and build IR.
-static struct IRinstruction* IRcg_dfs(struct ASTnode *x, struct IRfunction *f, struct IRblock *b) {
-	// nothing to do, return the null object.
+static struct IRinstruction* IRcg_dfs(struct ASTnode *x, struct cg_context *ctx) {
+	// nothing to do, return the undef object.
 	if (x == NULL) {
-		return (f->null);	
+		return (ctx->undef);	
 	}
 
 	switch (x->op) {
 		case A_RETURN: {
 			struct ASTunnode *t = (void*)x;
-			struct IRinstruction *value = IRcg_dfs(t->left, f, b);
-			IRinstruction_new(b, IR_RET, IRT_VOID, value, NULL);
-			b->is_complete = true;
-			return (f->null);
+			struct IRinstruction *value = IRcg_dfs(t->left, ctx);
+			value = IRinstruction_cast(value, &ctx->af->ret_type, ctx->undef);
+			IRinstruction_new(ctx->b, IR_RET, IRT_VOID, value, NULL);
+			ctx->b->is_complete = true;
+			return (ctx->undef);
 		}
 
 		case A_BLOCK: {
 			struct ASTblocknode *t = (void*)x;
 			struct llist_node *p = t->st.head;
 			while (p) {
-				IRcg_dfs((struct ASTnode*)p, f, b);
+				IRcg_dfs((struct ASTnode*)p, ctx);
 				p = p->nxt;
 			}
-			return (f->null);
+			return (ctx->undef);
 		}
 
 		case A_LIT_I32: {
 			struct ASTi32node *t = (void*)x;
-			return (IRinstruction_new_i32(b, t->val));
+			return (IRinstruction_new_i32(ctx->b, t->val));
 		}
 
 		case A_NEG: case A_BNOT: {
 			struct ASTunnode *t = (void*)x;
-			struct IRinstruction *value = IRcg_dfs(t->left, f, b);
+			struct IRinstruction *value = IRcg_dfs(t->left, ctx);
 
 			int type = IRTypecode_integer_promote(value->type);
 			if (type != value->type) {
-				value = IRinstruction_new(b, IR_SEXT, type, value, NULL);
+				value = IRinstruction_new(ctx->b, IR_SEXT, type, value, NULL);
 			}
 
-			return (IRinstruction_new(b, IRopcode_from_ast_unary(x->op), type, value, NULL));
+			return (IRinstruction_new(ctx->b, IRopcode_from_ast_unary(x->op), type, value, NULL));
 		}
 
 		case A_LNOT: {
 			struct ASTunnode *t = (void*)x;
 			// A logical not operation is basicly equivlant to comparing the value to 0.
-			struct IRinstruction *value = IRcg_dfs(t->left, f, b),
-					     *zero = IRinstruction_new_i32(b, 0);
-			return (IRinstruction_new(b, IR_CMP_EQ, IRT_I1, value, zero));
+			struct IRinstruction *value = IRcg_dfs(t->left, ctx),
+					     *zero = IRinstruction_new_i32(ctx->b, 0);
+			return (IRinstruction_new(ctx->b, IR_CMP_EQ, IRT_I1, value, zero));
 		}
 
 		default: {
@@ -257,8 +312,15 @@ struct IRfunction* IRfunction_from_ast(struct Afunction *afunc) {
 	llist_init(&self->bs);
 
 	struct IRblock *entry = IRblock_new(self);	// construct the function entry block.
-	self->null = IRinstruction_new_void(entry);	// initialize the null object.
-	IRcg_dfs(afunc->rt, self, entry);		// generate code by doing a DFS in our AST.
+
+	struct cg_context *ctx = try_malloc(sizeof(struct cg_context), __FUNCTION__);
+	ctx->undef = IRinstruction_new_undef(entry);	// initialize the undef object.
+	ctx->af = afunc;
+	ctx->b = entry;
+	ctx->irf = self;
+
+	IRcg_dfs(afunc->rt, ctx);		// generate code by doing a DFS in our AST.
+	free(ctx);
 	return (self);
 }
 
@@ -303,7 +365,7 @@ void IRinstruction_print(struct IRinstruction *self, FILE *Outfile) {
 		case IR_IMM: {
 			fprintf(Outfile, "\t$%d = %s", self->id, IRTypecode_stringify(self->type));
 			switch (self->type) {
-				case IRT_VOID: {
+				case IRT_VOID: case IRT_UNDEF: {
 				}	break;
 
 				case IRT_I1: {

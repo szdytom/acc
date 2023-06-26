@@ -95,6 +95,7 @@ struct Afunction {
 	struct llist_node n;	// linklist header
 	char *name;		// function name
 	struct ASTnode *rt;	// AST root
+	struct VType ret_type;	// return type
 };
 
 struct Afunction* Afunction_new();
